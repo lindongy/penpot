@@ -1,0 +1,547 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC
+
+@import "refactor/common-refactor.scss";
+
+.layers {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  box-sizing: border-box;
+  .tool-window-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: $spacing-32;
+    margin-top: $spacing-8;
+    .page-name {
+      @include titleTipography;
+      padding: 0 $spacing-12;
+      color: var(--title-foreground-color);
+    }
+    .icon-search {
+      @extend .button-primary;
+      height: $spacing-32;
+      width: $spacing-24;
+      border-radius: $br8;
+      margin-right: $spacing-12;
+      svg {
+        @extend .button-icon-small;
+        margin: 0;
+      }
+    }
+    &.search {
+      padding: 0 $spacing-12;
+      .search-box {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: $spacing-2;
+        height: $spacing-32;
+        width: 100%;
+        margin-right: $spacing-4;
+        border-radius: $br8;
+        background-color: var(--color-background-primary);
+        .filter-button {
+          @include flexCenter;
+          @include buttonStyle;
+          height: $spacing-32;
+          width: $spacing-32;
+          margin: 0;
+          border: 1px solid var(--color-background-tertiary);
+          border-radius: $br8 $br2 $br2 $br8;
+          background-color: var(--color-background-tertiary);
+          svg {
+            height: $spacing-16;
+            width: $spacing-16;
+            stroke: var(--icon-foreground);
+          }
+          &:focus {
+            border: 1px solid var(--input-border-color-focus);
+            outline: 0;
+            background-color: var(--input-background-color-active);
+            color: var(--input-foreground-color-active);
+            svg {
+              background-color: var(--input-background-color-active);
+            }
+          }
+
+          &:hover {
+            border: 1px solid var(--input-background-color-hover);
+            background-color: var(--input-background-color-hover);
+            svg {
+              background-color: var(--input-background-color-hover);
+            }
+          }
+        }
+        .search-input-wrapper {
+          @include flexCenter;
+          height: $spacing-32;
+          width: 100%;
+          border: 1px solid var(--color-background-tertiary);
+          border-radius: $br2 $br8 $br8 $br2;
+          background-color: var(--color-background-tertiary);
+          input {
+            width: 100%;
+            margin: $spacing-8;
+            border: 0;
+            background-color: var(--input-background-color);
+            font-size: $fs-12;
+            color: var(--input-foreground-color);
+            &:focus {
+              outline: none;
+            }
+          }
+          &:hover {
+            border: 1px solid var(--input-background-color-hover);
+            background-color: var(--input-background-color-hover);
+            input {
+              background-color: var(--input-background-color-hover);
+            }
+          }
+          &:focus-within {
+            background-color: var(--input-background-color-active);
+            color: var(--input-foreground-color-active);
+            border: 1px solid var(--input-border-color-focus);
+            input {
+              background-color: var(--input-background-color-active);
+            }
+          }
+
+          .clear {
+            @extend .button-secondary;
+            border-radius: $br8;
+            height: 100%;
+            svg {
+              @extend .button-icon-small;
+              color: transparent;
+            }
+          }
+        }
+      }
+      .close-search {
+        @extend .button-primary;
+        height: $spacing-32;
+        width: $spacing-28;
+        border-radius: $br8;
+        svg {
+          @extend .button-icon-small;
+        }
+      }
+    }
+  }
+  .active-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $spacing-4;
+    margin: $spacing-2 $spacing-12;
+    .layer-filter {
+      @extend .button-secondary;
+      @include buttonStyle;
+      gap: $spacing-4;
+      height: $spacing-24;
+      border-radius: $br6;
+      background-color: var(--pill-background-color);
+      cursor: pointer;
+      .layer-filter-icon,
+      .layer-filter-close {
+        @extend .button-icon-small;
+        stroke: var(--pill-foreground-color);
+        svg {
+          height: $spacing-12;
+        }
+      }
+      .layer-filter-name {
+        @include flexCenter;
+        @include buttonSmallTipography;
+        color: var(--pill-foreground-color);
+      }
+    }
+  }
+  .filters-container {
+    position: absolute;
+    top: $spacing-44;
+    left: $spacing-12;
+    display: flex;
+    flex-direction: column;
+    width: $spacing-192;
+    padding: $spacing-4;
+    border-radius: $br8;
+    background-color: var(--menu-background-color);
+    z-index: $z-index-1;
+    .filter-menu-item {
+      @include titleTipography;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: $spacing-6;
+      border-radius: $br8;
+
+      .filter-menu-item-name-wrapper {
+        display: flex;
+        align-items: center;
+        gap: $spacing-4;
+        .filter-menu-item-icon {
+          svg {
+            @extend .button-icon-small;
+            stroke: var(--menu-foreground-color);
+          }
+        }
+        .filter-menu-item-name {
+          color: var(--menu-foreground-color);
+        }
+      }
+      .filter-menu-item-tick {
+        svg {
+          @extend .button-icon-small;
+          stroke: var(--menu-foreground-color);
+        }
+      }
+
+      &.selected {
+        background-color: var(--menu-background-color-selected);
+        .filter-menu-item-name-wrapper {
+          .filter-menu-item-icon {
+            svg {
+              stroke: var(--menu-foreground-color-selected);
+            }
+          }
+          .filter-menu-item-name {
+            color: var(--menu-foreground-color-selected);
+          }
+        }
+        .filter-menu-item-tick {
+          svg {
+            stroke: var(--menu-foreground-color-selected);
+          }
+        }
+      }
+
+      &:hover {
+        background-color: var(--menu-background-color-hover);
+        .filter-menu-item-name-wrapper {
+          .filter-menu-item-icon {
+            svg {
+              stroke: var(--menu-foreground-color-hover);
+            }
+          }
+          .filter-menu-item-name {
+            color: var(--menu-foreground-color-hover);
+          }
+        }
+        .filter-menu-item-tick {
+          svg {
+            stroke: var(--menu-foreground-color-hover);
+          }
+        }
+      }
+    }
+  }
+  .tool-window-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+    overflow-y: overlay;
+    .element-list {
+      width: 100%;
+      .layer-row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        width: 100%;
+        &.hidden {
+          opacity: 70%;
+        }
+        .element-list-body {
+          display: flex;
+          align-items: center;
+          height: 32px;
+          width: 100%;
+          .button-content {
+            display: flex;
+            height: 100%;
+            .toggle-content {
+              @include buttonStyle;
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              align-items: center;
+              height: 100%;
+              width: $spacing-24;
+              padding: 0 4px 0 8px;
+              svg {
+                @extend .button-icon-small;
+              }
+
+              &.inverse {
+                svg {
+                  transform: rotate(90deg);
+                }
+                .icon-shape {
+                  transform: rotate(-90deg);
+                }
+              }
+            }
+            .icon-shape {
+              @include flexCenter;
+              @include buttonStyle;
+              position: relative;
+              justify-self: flex-end;
+              width: $spacing-16;
+              height: 100%;
+              width: $spacing-24;
+              padding: 0 8px 0 4px;
+              svg {
+                @extend .button-icon-small;
+              }
+
+              & .absolute {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: $spacing-16;
+                height: $spacing-16;
+
+                svg {
+                  @extend .button-icon-small;
+                  stroke-opacity: 0.5;
+                }
+              }
+            }
+          }
+          .element-name {
+            @include textEllipsis;
+            @include titleTipography;
+            flex-grow: 1;
+            max-width: calc(var(--parent-size) - (var(--depth) * var(--layer-indentation-size)));
+            color: var(--layer-row-foreground-color);
+          }
+          .element-name-input {
+            @include textEllipsis;
+            @include titleTipography;
+            flex-grow: 1;
+            height: $spacing-28;
+            max-width: calc(var(--parent-size) - (var(--depth) * var(--layer-indentation-size)));
+            margin: 0;
+            padding-left: $spacing-6;
+            border-radius: $br8;
+            border: 1px solid var(--input-border-color-focus);
+            outline: none;
+            background-color: transparent;
+            color: var(--layer-row-foreground-color);
+          }
+          .element-actions {
+            display: flex;
+            height: 100%;
+            padding-right: $spacing-12;
+            .toggle-element,
+            .block-element {
+              @include buttonStyle;
+              @include flexCenter;
+              height: 100%;
+              width: $spacing-24;
+              margin: 0;
+              display: none;
+              svg {
+                @extend .button-icon-small;
+              }
+            }
+            &.selected {
+              .toggle-element,
+              .block-element {
+                display: flex;
+                opacity: 0;
+                &.selected {
+                  opacity: 100%;
+                }
+              }
+            }
+          }
+        }
+        .element-children {
+          width: 100%;
+          ul {
+            margin-bottom: 0;
+          }
+        }
+
+        &.selected {
+          background-color: var(--layer-row-background-color-selected);
+          .element-list-body {
+            .button-content {
+              .toggle-content {
+                background-color: var(--layer-row-background-color-selected);
+                svg {
+                  stroke: var(--layer-row-foreground-color-selected);
+                }
+              }
+              .icon-shape {
+                svg {
+                  stroke: var(--layer-row-foreground-color-selected);
+                }
+                & .absolute {
+                  svg {
+                    stroke: var(--layer-row-foreground-color-selected);
+                  }
+                }
+              }
+            }
+            .element-name {
+              color: var(--layer-row-foreground-color-selected);
+            }
+            .element-actions {
+              .toggle-element,
+              .block-element {
+                display: flex;
+                svg {
+                  stroke: var(--layer-row-foreground-color-selected);
+                }
+              }
+              &.selected {
+                .toggle-element,
+                .block-element {
+                  display: flex;
+                  opacity: 100%;
+                  &.selected {
+                    opacity: 100%;
+                  }
+                }
+              }
+            }
+          }
+          .element-children {
+            background-color: transparent;
+            color: var(--layer-row-foreground-color-selected);
+            &:hover {
+              background-color: var(--layer-row-background-color-selected);
+            }
+          }
+        }
+        &:hover {
+          background-color: var(--layer-row-background-color-hover);
+          &.hidden {
+            opacity: 100%;
+          }
+          .element-list-body {
+            .button-content {
+              .toggle-content {
+                background-color: var(--layer-row-background-color-hover);
+                svg {
+                  stroke: var(--layer-row-foreground-color-hover);
+                }
+              }
+              .icon-shape {
+                svg {
+                  stroke: var(--layer-row-foreground-color-hover);
+                }
+                & .absolute {
+                  svg {
+                    stroke: var(--layer-row-foreground-color-hover);
+                  }
+                }
+              }
+            }
+            .element-name {
+              color: var(--layer-row-foreground-color-hover);
+            }
+            .element-actions {
+              .toggle-element,
+              .block-element {
+                display: flex;
+                svg {
+                  stroke: var(--layer-row-foreground-color-hover);
+                }
+              }
+              &.selected {
+                .toggle-element,
+                .block-element {
+                  opacity: 100%;
+                }
+              }
+            }
+          }
+          .element-children {
+            .layer-row {
+              background-color: transparent;
+              color: var(--layer-row-foreground-color-hover);
+              &:hover {
+                background-color: var(--layer-row-background-color-hover);
+              }
+            }
+          }
+        }
+
+        &.masked {
+        }
+        &.type-comp {
+          .button-content {
+            .toggle-content {
+              svg {
+                stroke: var(--layer-row-component-foreground-color);
+              }
+            }
+            .icon-shape {
+              svg {
+                stroke: var(--layer-row-component-foreground-color);
+              }
+              & .absolute {
+                svg {
+                  stroke: var(--layer-row-component-foreground-color);
+                }
+              }
+            }
+          }
+
+          .element-name {
+            color: var(--layer-row-component-foreground-color);
+          }
+          .element-actions {
+            .toggle-element,
+            .block-element {
+              svg {
+                stroke: var(--layer-row-component-foreground-color);
+              }
+            }
+          }
+          .element-children {
+            color: var(--layer-row-component-foreground-color);
+          }
+        }
+        &:global(.sticky) {
+          position: sticky;
+          top: 0px;
+          background-color: black;
+          z-index: 3;
+          > :first-child {
+
+            // background-color: $color-gray-50;
+            // z-index: 1;
+            // &.selected {
+            //   background-color: #1f1f1f;
+            // }
+            // &:hover {
+            //   background-color: #31efb8;
+            // }
+          }
+        }
+      }
+    }
+  }
+}
+
+.tab-indentation {
+  display: block;
+  height: $spacing-16;
+  min-width: calc(var(--depth) * var(--layer-indentation-size));
+}
+.parent-selected {
+  background-color: var(--layer-child-row-background-color);
+}

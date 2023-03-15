@@ -9,15 +9,6 @@
   border-left: 1px solid $color-gray-60;
   position: relative;
 
-  &.settings-bar-left {
-    border-left: none;
-    border-right: 1px solid $color-gray-60;
-
-    & .tab-container-tabs {
-      padding-left: 1.5rem;
-    }
-  }
-
   .settings-bar-inside {
     display: grid;
     grid-template-columns: 100%;
@@ -246,7 +237,8 @@
   width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-
+  scrollbar-gutter: stable;
+  overflow-y: overlay;
   &.inspect {
     .tab-container-tabs {
       padding-bottom: 0.5rem;
@@ -266,91 +258,6 @@
   }
 }
 
-.element-list {
-  margin: 0;
-  width: 100%;
-
-  ul {
-    border-left: 9px solid $color-gray-50;
-    margin: 0 0 0 0.4rem;
-
-    li {
-      border-left: 1px solid $color-gray-40;
-    }
-  }
-
-  li {
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    padding-top: 1px;
-    padding-bottom: 1px;
-
-    &.open {
-      ul {
-        li {
-          .element-list-body {
-            border-style: dashed;
-          }
-        }
-      }
-    }
-  }
-}
-
-.element-list.pages-list {
-  max-height: 10rem;
-
-  .context-menu {
-    position: fixed;
-  }
-
-  .context-menu-items {
-    border: none;
-    margin: none;
-  }
-
-  .context-menu-action {
-    width: 100%;
-  }
-}
-
-button.collapse-sidebar {
-  background: none;
-  border: none;
-  cursor: pointer;
-  height: 2.5rem;
-  padding-top: 0.75rem;
-  position: absolute;
-  width: 1rem;
-
-  & svg {
-    width: 12px;
-    height: 12px;
-    fill: $color-gray-20;
-    transform: rotate(180deg);
-  }
-
-  &.collapsed {
-    background: $color-gray-60;
-    left: 48px;
-    top: 48px;
-    width: 28px;
-    height: 48px;
-    padding: 0;
-    border-radius: 0 $br4 $br4 0;
-    border-left: 1px solid $color-gray-50;
-
-    & svg {
-      transform: rotate(0deg);
-    }
-  }
-}
-
-#layers.tool-window {
-  overflow: auto;
-}
 
 .layers-tab {
   display: grid;
