@@ -12,19 +12,56 @@
    [app.common.exceptions :as ex]
    [app.common.geom.shapes :as gsh]
    [app.common.math :as mth]
+   [app.common.pages.changes-spec :as pcs]
    [app.common.pages.common :refer [component-sync-attrs]]
    [app.common.pages.helpers :as cph]
+   [app.common.schema :as sm]
+   [app.common.schema.describe :as smd]
    [app.common.spec :as us]
-   [app.common.pages.changes-spec :as pcs]
+   [app.common.types.colors-list :as ctcl]
    [app.common.types.components-list :as ctkl]
    [app.common.types.container :as ctn]
-   [app.common.types.colors-list :as ctcl]
    [app.common.types.file :as ctf]
    [app.common.types.page :as ctp]
    [app.common.types.pages-list :as ctpl]
    [app.common.types.shape :as cts]
    [app.common.types.shape-tree :as ctst]
    [app.common.types.typographies-list :as ctyl]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SCHEMAS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(sm/def! ::change
+  [:multi {:dispatch :type :title "Change"}
+   [:set-option
+    [:map {:title "set-option" ::smd/inline true}
+     [:type [:= :set-option]]
+     [:page-id ::sm/uuid]
+     [:option [:union
+               [:keyword]
+               [:vector :keyword]]]
+     [:value :any]]]
+   [:add-obj
+    [:map {:title "add-obj" ::smd/inline true}
+     [:type [:= :add-obj]]
+     [:id ::sm/uuid]
+     [:obj :any]
+     [:page-id {:optional true} ::sm/uuid]
+     [:component-id {:optional true} ::sm/uuid]
+     [:frame-id ::sm/uuid]
+     [:parent-id ::sm/uuid]
+     [:index :int]
+     [:ignore-touched :boolean]]]])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Specific helpers
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn- without-obj
+  "Clear collection from specified obj and without nil values."
+  [coll o]
+  (into [] (filter #(not= % o)) coll))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page Transformation Changes
@@ -106,6 +143,7 @@
     (d/update-in-when data [:pages-index page-id] ctst/delete-shape id ignore-touched)
     (d/update-in-when data [:components component-id] ctst/delete-shape id ignore-touched)))
 
+;; FIXME: remove, seems like this method is already unused
 ;; reg-objects operation "regenerates" the geometry and selrect of the parent groups
 (defmethod process-change :reg-objects
   [data {:keys [page-id component-id shapes]}]
