@@ -9,6 +9,7 @@
    [app.common.data :as d]
    [app.common.files.features :as ffeat]
    [app.common.geom.point :as gpt]
+   [app.common.geom.shapes :as gsh]
    [app.common.logging :as log]
    [app.common.pages :as cp]
    [app.common.pages.changes :as ch]
@@ -152,7 +153,7 @@
         changes     (-> (pcb/empty-changes it)
                         (pcb/with-library-data data)
                         (pcb/update-color color))
-        
+
         undo-id (js/Symbol)]
     (rx/of (dwu/start-undo-transaction undo-id)
            (dch/commit-changes changes)
@@ -428,6 +429,31 @@
                             (pcb/delete-component id))]
             (rx/of (dch/commit-changes changes))))))))
 
+
+(defn prepare-restore-component
+  ([library-id component-id state it]
+   (let [library-data (wsh/get-file state library-id)
+         component    (ctkl/get-deleted-component library-data component-id)
+         page         (ctf/get-component-page library-data component)]
+     (prepare-restore-component library-id component-id state it page (gpt/point 0 0))))
+
+  ([library-id component-id state it page delta]
+  (let [library-data (wsh/get-file state library-id)
+        component    (ctkl/get-deleted-component library-data component-id)
+
+        shapes       (cph/get-children-with-self (:objects component) (:main-instance-id component))
+        shapes       (map #(gsh/move % delta) shapes)
+        changes      (-> (pcb/empty-changes it)
+                         (pcb/with-library-data library-data)
+                         (pcb/with-page page))
+        changes      (reduce #(pcb/add-object %1 %2 {:ignore-touched true})
+                             changes
+                             shapes)]
+    {:changes (pcb/restore-component changes component-id (:id page))
+     :shape (first shapes)}))
+  )
+
+
 (defn restore-component
   "Restore a deleted component, with the given id, in the given file library."
   [library-id component-id]
@@ -436,18 +462,10 @@
   (ptk/reify ::restore-component
     ptk/WatchEvent
     (watch [it state _]
-     (let [library-data (wsh/get-file state library-id)
-           component    (ctkl/get-deleted-component library-data component-id)
-           page         (ctf/get-component-page library-data component)
-           shapes       (cph/get-children-with-self (:objects component) (:main-instance-id component))
-           changes      (-> (pcb/empty-changes it)
-                            (pcb/with-library-data library-data)
-                            (pcb/with-page page))
-           changes      (reduce #(pcb/add-object %1 %2 {:ignore-touched true})
-                                changes
-                                shapes)
-           changes      (pcb/restore-component changes component-id)]
-     (rx/of (dch/commit-changes changes))))))
+      (let [_ (prn "restoring")
+            changes (:changes (prepare-restore-component library-id component-id state it))]
+        (rx/of (dch/commit-changes changes))))))
+
 
 (defn instantiate-component
   "Create a new shape in the current page, from the component with the given id
@@ -475,8 +493,8 @@
         (rx/of (dwu/start-undo-transaction undo-id)
                (dch/commit-changes changes)
                (ptk/data-event :layout/update [(:id new-shape)])
-               (dws/select-shapes (d/ordered-set (:id new-shape))) 
-               
+               (dws/select-shapes (d/ordered-set (:id new-shape)))
+
                (dwu/commit-undo-transaction undo-id))))))
 
 (defn detach-component
