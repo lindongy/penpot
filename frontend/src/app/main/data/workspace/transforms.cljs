@@ -30,6 +30,7 @@
    [app.main.snap :as snap]
    [app.main.streams :as ms]
    [app.util.dom :as dom]
+   [app.wasm.resize :as wasm]
    [beicon.core :as rx]
    [cljs.spec.alpha :as s]
    [potok.core :as ptk]))
@@ -105,69 +106,75 @@
   "Enter mouse resize mode, until mouse button is released."
   [handler ids shape]
   (letfn [(resize
-           [shape initial layout [point lock? center? point-snap]]
-            (let [{:keys [width height]} (:selrect shape)
-                  {:keys [rotation]} shape
+           ;; shape initial layout [point lock? center? point-snap]
+            [shape _ layout [point lock? center? point-snap]]
+            (let [scale-text (:scale-text layout)
+                  resize-output @wasm/resize-output
 
-                  shape-center (gsh/center-shape shape)
+                  ;; shape initial point point-snap lock? center?
+                  _ (wasm/resize-update shape point point-snap (or lock? scale-text) center?)
+
+                  ;; shape-center (gpt/point x y)
                   shape-transform (:transform shape)
                   shape-transform-inverse (:transform-inverse shape)
 
-                  rotation (or rotation 0)
+                  ;; rotation (or rotation 0)
 
-                  initial (gmt/transform-point-center initial shape-center shape-transform-inverse)
-                  initial (fix-init-point initial handler shape)
+                  ;; initial (gmt/transform-point-center initial shape-center shape-transform-inverse)
+                  ;; initial (fix-init-point initial handler shape)
 
-                  point (gmt/transform-point-center (if (= rotation 0) point-snap point)
-                                                    shape-center shape-transform-inverse)
+                  ;; current (if (= rotation 0) point-snap point)
+                  ;; point (gmt/transform-point-center current shape-center shape-transform-inverse)
 
-                  shapev (-> (gpt/point width height))
+                  ;; shapev (-> (gpt/point width height))
 
-                  scale-text (:scale-text layout)
+                  ;; scale-text (:scale-text layout)
 
                   ;; Force lock if the scale text mode is active
-                  lock? (or lock? scale-text)
+                  ;; lock? (or lock? scale-text)
 
                   ;; Vector modifiers depending on the handler
-                  handler-mult (let [[x y] (handler-multipliers handler)] (gpt/point x y))
+                  ;; handler-mult (let [[x y] (handler-multipliers handler)] (gpt/point x y))
 
                   ;; Difference between the origin point in the coordinate system of the rotation
-                  deltav (-> (gpt/to-vec initial point)
-                             (gpt/multiply handler-mult))
+                  ;; deltav (gpt/to-vec initial point)
+                  ;; deltav (gpt/multiply deltav handler-mult)
 
                   ;; Resize vector
-                  scalev (-> (gpt/divide (gpt/add shapev deltav) shapev)
-                             (gpt/no-zeros))
+                  ;; scalev (gpt/add shapev deltav)
+                  ;; scalev (gpt/divide scalev shapev)
+                  ;; scalev (gpt/no-zeros scalev)
 
-                  scalev (if lock?
-                           (let [v (cond
-                                     (#{:right :left} handler) (:x scalev)
-                                     (#{:top :bottom} handler) (:y scalev)
-                                     :else (max (:x scalev) (:y scalev)))]
-                             (gpt/point v v))
-
-                           scalev)
+                  ;; scalev (if lock?
+                  ;;          (let [v (cond
+                  ;;                    (#{:right :left} handler) (:x scalev)
+                  ;;                    (#{:top :bottom} handler) (:y scalev)
+                  ;;                    :else (max (:x scalev) (:y scalev)))]
+                  ;;            (gpt/point v v))
+                  ;;          scalev)
+                  scalev (. ^js resize-output -vector)
 
                   ;; Resize origin point given the selected handler
-                  handler-origin  (handler-resize-origin (:selrect shape) handler)
-
+                  ;; handler-origin  (handler-resize-origin (:selrect shape) handler)
 
                   ;; If we want resize from center, displace the shape
                   ;; so it is still centered after resize.
-                  displacement
-                  (when center?
-                    (-> shape-center
-                        (gpt/subtract handler-origin)
-                        (gpt/multiply scalev)
-                        (gpt/add handler-origin)
-                        (gpt/subtract shape-center)
-                        (gpt/multiply (gpt/point -1 -1))
-                        (gpt/transform shape-transform)))
+                  ;; displacement
+                  ;; (when center?
+                  ;;   (-> shape-center
+                  ;;       (gpt/subtract handler-origin)
+                  ;;       (gpt/multiply scalev)
+                  ;;       (gpt/add handler-origin)
+                  ;;       (gpt/subtract shape-center)
+                  ;;       (gpt/multiply (gpt/point -1 -1))
+                  ;;       (gpt/transform shape-transform)))
+                  displacement (. ^js resize-output -displacement)
 
-                  resize-origin
-                  (cond-> (gmt/transform-point-center handler-origin shape-center shape-transform)
-                    (some? displacement)
-                    (gpt/add displacement))
+                  ;; resize-origin
+                  ;; (cond-> (gmt/transform-point-center handler-origin shape-center shape-transform)
+                  ;;   (some? displacement)
+                  ;;   (gpt/add displacement))
+                  resize-origin (. ^js resize-output -origin)
 
                   ;; When the horizontal/vertical scale a flex children with auto/fill
                   ;; we change it too fixed
@@ -217,6 +224,10 @@
               zoom    (get-in state [:workspace-local :zoom] 1)
               objects (wsh/lookup-page-objects state page-id)
               resizing-shapes (map #(get objects %) ids)]
+
+          ;; It would be great if we could move more "constant"
+          ;; values during resize transformation to this part.  
+          (wasm/resize-start handler initial-position)
 
           (rx/concat
            (->> ms/mouse-position

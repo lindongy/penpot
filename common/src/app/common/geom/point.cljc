@@ -65,6 +65,7 @@
      :else
      (ex/raise :hint "invalid arguments (on pointer constructor)" :value v)))
   ([x y]
+   ;; #?(:cljs (js/console.count "Point"))
    (Point. x y)))
 
 (defn close?

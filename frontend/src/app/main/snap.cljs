@@ -98,6 +98,13 @@
                     (mapv #(vector (- % snap-accuracy)
                                    (+ % snap-accuracy))))
         vbox @refs/vbox]
+    ;; (js/console.count "search-snap")
+    ;; (js/console.log "search-snap"
+    ;;   (clj->js page-id)
+    ;;   (clj->js frame-id)
+    ;;   (clj->js coord)
+    ;;   (clj->js ranges)
+    ;;   (clj->js vbox))
     (->> (uw/ask! {:cmd :snaps/range-query
                    :page-id page-id
                    :frame-id frame-id
