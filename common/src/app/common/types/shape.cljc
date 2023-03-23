@@ -270,6 +270,15 @@
 
 ;; --- Schema
 
+(def horizontal-constraint-types
+  #{:left :right :leftright :center :scale})
+
+(def vertical-constraint-types
+  #{:top :bottom :topbottom :center :scale})
+
+(def text-align-types
+  #{"left" "right" "center" "justify"})
+
 (sm/def! ::selrect
   [:map {:title "Selrect"}
    [:x ::sm/safe-number]
@@ -284,32 +293,30 @@
 (sm/def! ::points
   [:vector ::gpt/point])
 
-;; (sm/def! ::fill
-;;   [:map {:title "Fill" :min 1}
-;;    [:fill-color {:optional true} ::ctc/rgb-color]
-;;    [:fill-opacity {:optional true} ::sm/safe-number]
-;;    [:fill-color-gradient {:optional true} ::ctc/gradient]
-;;    [:fill-color-ref-file {:optional true} [:maybe ::sm/uuid]]
-;;    [:fill-color-ref-id {:optional true} [:maybe ::sm/uuid]]])
+(sm/def! ::fill
+  [:map {:title "Fill" :min 1}
+   [:fill-color {:optional true} ::ctc/rgb-color]
+   [:fill-opacity {:optional true} ::sm/safe-number]
+   [:fill-color-gradient {:optional true} ::ctc/gradient]
+   [:fill-color-ref-file {:optional true} [:maybe ::sm/uuid]]
+   [:fill-color-ref-id {:optional true} [:maybe ::sm/uuid]]])
 
-;; FIXME: union-set
-;; (sm/def! ::stroke
-;;   [:map {:title "Stroke"}
-;;    [:stroke-color {:optional true} :string]
-;;    [:stroke-color-ref-file {:optional true} ::sm/uuid]
-;;    [:stroke-color-ref-id {:optional true} ::sm/uuid]
-;;    [:stroke-opacity {:optional true} ::sm/safe-number]
-;;    [:stroke-style {:optional true}
-;;     [:union :solid :dotted :dashed :mixed :none :svg]]
-;;    [:stroke-width {:optional true} ::sm/safe-number]
-;;    [:stroke-alignment {:optional true}
-;;     [:union :center :inner :outer]]
-;;    [:stroke-cap-start {:optional true}
-;;     [:union-set stroke-caps]]
-;;    [:stroke-cap-end {:optional true}
-;;     [:union-set stroke-caps]]
-;;    [:stroke-color-gradient {:optional true} ::ctc/gradient]])
-
+(sm/def! ::stroke
+  [:map {:title "Stroke"}
+   [:stroke-color {:optional true} :string]
+   [:stroke-color-ref-file {:optional true} ::sm/uuid]
+   [:stroke-color-ref-id {:optional true} ::sm/uuid]
+   [:stroke-opacity {:optional true} ::sm/safe-number]
+   [:stroke-style {:optional true}
+    [::sm/one-of #{:solid :dotted :dashed :mixed :none :svg}]]
+   [:stroke-width {:optional true} ::sm/safe-number]
+   [:stroke-alignment {:optional true}
+    [::sm/one-of #{:center :inner :outer}]]
+   [:stroke-cap-start {:optional true}
+    [::sm/one-of stroke-caps]]
+   [:stroke-cap-end {:optional true}
+    [::sm/one-of stroke-caps]]
+   [:stroke-color-gradient {:optional true} ::ctc/gradient]])
 
 (sm/def! ::shape-attrs
   [:map {:title "ShapeAttrs"}
@@ -326,10 +333,10 @@
    [:locked {:optional true} :boolean]
    [:hidden {:optional true} :boolean]
    [:masked-group? {:optional true} :boolean]
-   ;; [:fills {:optional true} [:vector ::fill]]
+   [:fills {:optional true} [:vector ::fill]]
    [:hide-fill-on-export {:optional true} :boolean]
    [:font-family {:optional true} :string]
-   [:font-size {:optional true} :sm/safe-int]
+   [:font-size {:optional true} ::sm/safe-int]
    [:font-style {:optional true} :string]
    [:font-weight {:optional true} :string]
    [:letter-spacing {:optional true} ::sm/safe-number]
@@ -337,34 +344,33 @@
    [:proportion {:optional true} ::sm/safe-number]
    [:proportion-lock {:optional true} :boolean]
    [:constraints-h {:optional true}
-    [:union :left :right :leftright :center :scale]]
+    [::sm/one-of horizontal-constraint-types]]
    [:constraints-v {:optional true}
-    [:union :top :bottom :topbottom :center :scale]]
+    [::sm/one-of vertical-constraint-types]]
    [:fixed-scroll {:optional true} :boolean]
-   ;; [:rx {:optional true} ::ctsr/rx]
-   ;; [:ry {:optional true} ::ctsr/ry]
-   ;; [:r1 {:optional true} ::ctsr/r1]
-   ;; [:r2 {:optional true} ::ctsr/r2]
-   ;; [:r3 {:optional true} ::ctsr/r3]
-   ;; [:r4 {:optional true} ::ctsr/r4]
+   [:rx {:optional true} ::ctsr/rx]
+   [:ry {:optional true} ::ctsr/ry]
+   [:r1 {:optional true} ::ctsr/r1]
+   [:r2 {:optional true} ::ctsr/r2]
+   [:r3 {:optional true} ::ctsr/r3]
+   [:r4 {:optional true} ::ctsr/r4]
    [:x {:optional true} ::sm/safe-number]
    [:y {:optional true} ::sm/safe-number]
    [:width {:optional true} ::sm/safe-number]
    [:height {:optional true} ::sm/safe-number]
    [:opacity {:optional true} ::sm/safe-number]
-   ;; [:exports {:optional true} [:vector ::ctse/export]]
+   [:exports {:optional true} [:vector ::ctse/export]]
    [:shapes {:optional true} [:vector ::sm/uuid]]
-   ;; [:strokes {:optional true} [:vector ::sm/uuid]]
+   [:strokes {:optional true} [:vector ::stroke]]
    [:text-align {:optional true}
-    [:union "left" "right" "center" "justify"]]
-   ;; [:transform {:optional true} ::gmt/matrix]
-   ;; [:transform-inverse {:optional true} ::gmt/matrix]
-   ;; [:blend-mode {:optional true} [:union-set blend-mode]]
-   ;; [:interactions {:optional true} ::ctsi/interactions]
-   ;; [:shadow {:optional true} ::ctss/shadow]
-   ;; [:blur {:optional true} ::ctsb/blur]
+    [::sm/one-of text-align-types]]
+   [:transform {:optional true} ::gmt/matrix]
+   [:transform-inverse {:optional true} ::gmt/matrix]
+   [:blend-mode {:optional true} [::sm/one-of blend-mode]]
+   [:interactions {:optional true} [:vector ::ctsi/interaction]]
+   [:shadow {:optional true} ::ctss/shadow]
+   [:blur {:optional true} ::ctsb/blur]
    ])
-
 
 
 ;; --- Initialization

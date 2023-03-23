@@ -6,6 +6,7 @@
 
 (ns app.common.types.shape.export
   (:require
+   [app.common.schema :as sm]
    [app.common.spec :as us]
    [clojure.spec.alpha :as s]))
 
@@ -18,3 +19,9 @@
                    ::suffix
                    ::scale]))
 
+
+(sm/def! ::export
+  [:map {:title "ShapeExport"}
+   [:type :keyword]
+   [:scale ::sm/safe-number]
+   [:suffix :string]])

@@ -10,6 +10,7 @@
    [app.common.geom.point :as gpt]
    [app.common.geom.shapes.bounds :as gsb]
    [app.common.pages.helpers :as cph]
+   [app.common.schema :as sm]
    [app.common.spec :as us]
    [clojure.spec.alpha :as s]))
 
@@ -21,6 +22,10 @@
 ;;
 ;;          So make sure to use has-delay/has-destination... functions, or similar,
 ;;          before reading them.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SPECS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; -- Options depending on event type
 
@@ -160,6 +165,132 @@
 (s/def ::interactions
   (s/coll-of ::interaction :kind vector?))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SCHEMA
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def event-types
+  #{:click
+    :mouse-press
+    :mouse-over
+    :mouse-enter
+    :mouse-leave
+    :after-delay})
+
+(def action-types
+  #{:navigate
+    :open-overlay
+    :toggle-overlay
+    :close-overlay
+    :prev-screen
+    :open-url})
+
+(def overlay-positioning-type
+  #{:manual
+    :center
+    :top-left
+    :top-right
+    :top-center
+    :bottom-left
+    :bottom-right
+    :bottom-center})
+
+(def easing-types
+  #{:linear
+    :ease
+    :ease-in
+    :ease-out
+    :ease-in-out})
+
+(def direction-types
+  #{:right
+    :left
+    :up
+    :down})
+
+(def way-types
+  #{:in :out})
+
+(sm/def! ::animation
+  [:multi {:dispatch :animation-type}
+   [:dissolve
+    [:map
+     [:animation-type [:= :dissolve]]
+     [:duration ::sm/safe-int]
+     [:easing [::sm/one-of easing-types]]]]
+   [:slide
+    [:map
+     [:animation-type [:= :slide]]
+     [:duration ::sm/safe-int]
+     [:easing [::sm/one-of easing-types]]
+     [:way [::sm/one-of way-types]]
+     [:direction [::sm/one-of direction-types]]
+     [:offset-effect :boolean]]]
+   [:push
+    [:map
+     [:animation-type [:= :push]]
+     [:duration ::sm/safe-int]
+     [:easing [::sm/one-of easing-types]]
+     [:direction [::sm/one-of direction-types]]]]])
+
+(sm/def! ::interaction
+  [:merge
+   [:map {:title "InteractionClassifier"}
+    [:event-type
+     [::sm/one-of event-types]]
+    [:action-type
+     [::sm/one-of action-types]]]
+   [:multi {:dispatch :event-type}
+    [:after-delay
+     [:map
+      [:event-type [:= :after-delay]]
+      [:delay {:min 0} ::sm/safe-int]]]]
+   [:multi {:dispatch :event-action}
+    [:navigate
+     [:map
+      [:event-action [:= :navigate]]
+      [:destination {:optional true} [:maybe ::sm/uuid]]
+      [:preserve-scroll {:optional true} :boolean]
+      [:animation ::animation]]]
+    [:open-overlay
+     [:map
+      [:event-action [:= :open-overlay]]
+      [:overlay-position ::gpt/point]
+      [:overlay-pos-type [::sm/one-of overlay-positioning-type]]
+      [:destination {:optional true} [:maybe ::sm/uuid]]
+      [:close-click-outside {:optional true} :boolean]
+      [:background-overlay {:optional true} :boolean]
+      [:animation ::animation]
+      [:position-relative-to {:optional true} [:maybe ::sm/uuid]]]]
+    [:toggle-overlay
+     [:map
+      [:event-action [:= :toggle-overlay]]
+      [:overlay-position ::gpt/point]
+      [:overlay-pos-type [::sm/one-of overlay-positioning-type]]
+      [:destination {:optional true} [:maybe ::sm/uuid]]
+      [:close-click-outside {:optional true} :boolean]
+      [:background-overlay {:optional true} :boolean]
+      [:animation ::animation]
+      [:position-relative-to {:optional true} [:maybe ::sm/uuid]]]]
+    [:close-overlay
+     [:map
+      [:event-action [:= :toggle-overlay]]
+      [:destination {:optional true} [:maybe ::sm/uuid]]
+      [:animation ::animation]
+      [:position-relative-to {:optional true} [:maybe ::sm/uuid]]]]
+    [:prev-screen
+     [:map
+      [:event-action [:= :prev-screen]]]]
+    [:open-url
+     [:map
+      [:event-action [:= :open-url]]
+      [:url :string]]]]])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; HELPERS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def default-interaction
   {:event-type :click
    :action-type :navigate
@@ -168,6 +299,9 @@
    :preserve-scroll false})
 
 (def default-delay 600)
+
+
+
 
 ;; -- Helpers for interaction
 

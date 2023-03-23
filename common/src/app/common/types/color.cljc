@@ -72,26 +72,20 @@
     ::oapi/type "integer"
     ::oapi/format "int64"}})
 
-;; (sm/def! ::gradient
-;;   [:map {:title "Gradient"}
-;;    [:type [:union :linear :radial]]
-;;    [:start-x ::sm/safe-number]
-;;    [:start-y ::sm/safe-number]
-;;    [:end-x ::sm/safe-number]
-;;    [:end-y ::sm/safe-number]
-;;    [:width ::sm/safe-number]
-;;    [:stops
-;;     [:vector {:min 1}
-;;      [:map "GradientStop"
-;;       [:color ::rgb-color]
-;;       [:opacity ::sm/safe-number]
-;;       [:offset ::sm/safe-number]]]]])
-
-
-
-
-
-
+(sm/def! ::gradient
+  [:map {:title "Gradient"}
+   [:type [::sm/one-of #{:linear :radial}]]
+   [:start-x ::sm/safe-number]
+   [:start-y ::sm/safe-number]
+   [:end-x ::sm/safe-number]
+   [:end-y ::sm/safe-number]
+   [:width ::sm/safe-number]
+   [:stops
+    [:vector {:min 1}
+     [:map {:title "GradientStop"}
+      [:color ::rgb-color]
+      [:opacity ::sm/safe-number]
+      [:offset ::sm/safe-number]]]]])
 
 ;; --- COLORS
 

@@ -9,7 +9,9 @@
   #?(:cljs (:require-macros [app.common.schema :refer [ignoring]]))
   (:require
    [app.common.data :as d]
+   [app.common.schema.generators :as sg]
    [app.common.schema.openapi :as-alias oapi]
+   [app.common.schema.registry :as sr]
    [app.common.uuid :as uuid]
    [clojure.test.check.generators :as tgen]
    [cuerdas.core :as str]
@@ -20,25 +22,25 @@
    [malli.transform :as mt]
    [malli.util :as mu]))
 
-(def registry (atom {}))
+;; (def registry (atom {}))
 
-(def default-registry
-  (mr/composite-registry
-   m/default-registry
-   (mu/schemas)
-   (mr/mutable-registry registry)))
+;; (def default-registry
+;;   (mr/composite-registry
+;;    m/default-registry
+;;    (mu/schemas)
+;;    (mr/mutable-registry registry)))
 
 (defn validate
   [s value]
-  (m/validate s value {:registry default-registry}))
+  (m/validate s value {:registry sr/default-registry}))
 
 (defn explain
   [s value]
-  (m/explain s value {:registry default-registry}))
+  (m/explain s value {:registry sr/default-registry}))
 
 (defn explain-data
   [s value]
-  (mu/explain-data s value {:registry default-registry}))
+  (mu/explain-data s value {:registry sr/default-registry}))
 
 (defn schema?
   [o]
@@ -46,11 +48,15 @@
 
 (defn schema
   [s]
-  (m/schema s {:registry default-registry}))
+  (m/schema s {:registry sr/default-registry}))
 
 (defn humanize
   [exp]
   (me/humanize exp))
+
+(defn generate
+  [s]
+  (mg/generate (schema s)))
 
 (defn form
   [s]
@@ -72,15 +78,15 @@
   [exp]
   (malli.error/error-value exp {:malli.error/mask-valid-values '...}))
 
-(def input-transformer
+(def default-transformer
   (let [default-decoder
         {:compile (fn [s _registry]
                     (let [props (m/type-properties s)]
-                      (::decode props)))}
+                      (::oapi/decode props)))}
         default-encoder
         {:compile (fn [s _]
                     (let [props (m/type-properties s)]
-                      (::encode props)))}
+                      (::oapi/encode props)))}
 
         coders {:vector mt/-sequential-or-set->vector
                 :sequential mt/-sequential-or-set->seq
@@ -100,10 +106,6 @@
 
      )))
 
-(def output-transformer
-  (mt/key-transformer {:encode str/camel
-                       :decode (comp keyword str/kebab)}))
-
 (defn validator
   [s]
   (-> s schema m/validator))
@@ -114,19 +116,19 @@
 
 (defn encode
   ([s val transformer]
-   (m/encode s val {:registry default-registry} transformer))
+   (m/encode s val {:registry sr/default-registry} transformer))
   ([s val options transformer]
    (m/encode s val options transformer)))
 
 (defn decode
   ([s val transformer]
-   (m/decode s val {:registry default-registry} transformer))
+   (m/decode s val {:registry sr/default-registry} transformer))
   ([s val options transformer]
    (m/decode s val options transformer)))
 
 (defn decoder
   ([s transformer]
-   (m/decoder s  {:registry default-registry} transformer))
+   (m/decoder s  {:registry sr/default-registry} transformer))
   ([s options transformer]
    (m/decoder s options transformer)))
 
@@ -169,16 +171,16 @@
 
 (defn lookup
   "Lookups schema from registry."
-  ([s] (lookup default-registry s))
+  ([s] (lookup sr/default-registry s))
   ([registry s] (schema (mr/schema registry s))))
 
-(defn generator
-  [s]
-  (mg/generator s {:registry default-registry}))
+;; (defn generator
+;;   [s]
+;;   (mg/generator s {:registry sr/default-registry}))
 
-(defn generate
-  [s]
-  (mg/generate (schema s)))
+;; (defn generate
+;;   [s]
+;;   (mg/generate (schema s)))
 
 (defmacro assert-schema!
   [& [s value hint]]
@@ -241,10 +243,23 @@
 
 (defn register! [type s]
   (let [s (if (map? s) (simple-schema s) s)]
-    (swap! registry assoc type s)))
+    (swap! sr/registry assoc type s)))
 
 (defn def! [type s]
   (register! type s))
+
+;; --- GENERATORS
+
+(defn gen-set-from-choices
+  [choices]
+  (->> tgen/nat
+       (tgen/fmap (fn [i]
+                    (into #{}
+                          (map (fn [_] (rand-nth choices)))
+                          (range i))))))
+
+
+;; --- BUILTIN SCHEMAS
 
 (def! :merge (mu/-merge))
 (def! :union (mu/-union))
@@ -259,7 +274,7 @@
    {:title "uuid"
     :description "UUID formatted string"
     :error/message "should be an uuid"
-    :gen/gen (tgen/fmap (fn [_] (uuid/next)) tgen/any)
+    :gen/gen (sg/uuid)
     ::oapi/type "string"
     ::oapi/format "uuid"
     ::decode #(uuid/uuid (re-matches uuid-rx %))}})
@@ -271,20 +286,37 @@
    (remove str/blank?)))
 
 (def! ::set-of-strings
-  (m/-simple-schema
-   {:type ::set-of-strings
-    :pred #(and (set? %) (every? string? %))
-    :type-properties
-    {:title "set[type=string]"
-     :description "Set of Strings"
-     :error/message "should be an set of strings"
-     :gen/gen (tgen/set (generator :string))
-     ::oapi/type "array"
-     ::oapi/format "set"
-     ::oapi/items {:type "string"}
-     ::oapi/unique-items true
-     ::decode (fn [v]
-                (into #{} non-empty-strings-xf (str/split v #"[\s,]+")))}}))
+  {:type ::set-of-strings
+   :pred #(and (set? %) (every? string? %))
+   :type-properties
+   {:title "set[type=string]"
+    :description "Set of Strings"
+    :error/message "should be an set of strings"
+    :gen/gen (-> :string sg/generator sg/set)
+    ::oapi/type "array"
+    ::oapi/format "set"
+    ::oapi/items {:type "string"}
+    ::oapi/unique-items true
+    ::decode (fn [v]
+               (into #{} non-empty-strings-xf (str/split v #"[\s,]+")))}})
+
+(def! ::one-of
+  {:type ::one-of
+   :min 1
+   :max 1
+   :compile (fn [props children options]
+              (let [options (into #{} (last children))
+                    format  (:format props "keyword")]
+                {:pred #(contains? options %)
+                 :type-properties
+                 {:title "one-of"
+                  :description "One of the Set"
+                  :gen/gen (sg/elements options)
+                  ::oapi/type "string"
+                  ::oapi/format (:format props "keyword")
+                  ::decode (if (= format "keyword")
+                             keyword
+                             identity)}}))})
 
 (def max-safe-int (int 1e6))
 (def min-safe-int (int -1e6))
@@ -296,10 +328,10 @@
    {:title "int"
     :description "Safe Integer"
     :error/message "expected to be int in safe range"
-    :gen/gen (generator :int)
+    :gen/gen (sg/small-int)
     ::oapi/type "integer"
     ::oapi/format "int64"
-    ::decode parse-long}})
+    ::oapi/decode parse-long}})
 
 (def! ::safe-number
   {:type ::safe-number
@@ -308,17 +340,20 @@
    {:title "number"
     :description "Safe Number"
     :error/message "expected to be number in safe range"
-    :gen/gen (generator :int)
+    :gen/gen (sg/one-of (sg/small-int)
+                        (sg/small-double))
     ::oapi/type "number"
     ::oapi/format "double"
-    ::decode parse-double}})
+    ::oapi/decode parse-double}})
 
-;; --- GENERATORS
-
-(defn gen-set-from-choices
-  [choices]
-  (->> tgen/nat
-       (tgen/fmap (fn [i]
-                    (into #{}
-                          (map (fn [_] (rand-nth choices)))
-                          (range i))))))
+(def! ::safe-double
+  {:type ::safe-double
+   :pred #(and (double? %) (>= max-safe-int %) (>= % min-safe-int))
+   :type-properties
+   {:title "number"
+    :description "Safe Number"
+    :error/message "expected to be number in safe range"
+    :gen/gen (sg/small-double)
+    ::oapi/type "number"
+    ::oapi/format "double"
+    ::oapi/decode parse-double}})
