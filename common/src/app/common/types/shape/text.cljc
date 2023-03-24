@@ -6,10 +6,16 @@
 
 (ns app.common.types.shape.text
   (:require
+   [app.common.schema :as sm]
    [app.common.spec :as us]
    [app.common.types.color :as ctc]
+   [app.common.types.shape :as-alias shape]
    [app.common.types.shape.text.position-data :as-alias position-data]
    [clojure.spec.alpha :as s]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SPEC
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (s/def ::type #{"root" "paragraph-set" "paragraph"})
 (s/def ::text string?)
@@ -70,4 +76,81 @@
 (s/def ::position-data/text string?)
 (s/def ::position-data/text-decoration string?)
 (s/def ::position-data/text-transform string?)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SCHEMA
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def node-types #{"root" "paragraph-set" "paragraph"})
+
+(sm/def! ::content
+  [:schema
+   {:registry {::node
+               [:map
+                [:type [::sm/one-of node-types]]
+                [:key {:optional true} :string]
+                [:children {:optional true} [:vector {:min 1} [:ref ::node]]]]
+               ::text
+               [:map
+                [:text :string]]}}
+   [:or ::node ::text]])
+
+(sm/def! ::content
+  [:map
+   [:type [:= "root"]]
+   [:key {:optional true} :string]
+   [:children
+    [:vector {:min 1}
+     [:map
+      [:type [:= "paragraph-set"]]
+      [:key {:optional true} :string]
+      [:children
+       [:vector {:min 1}
+        [:map
+         [:type [:= "paragraph"]]
+         [:key {:optional true} :string]
+         [:fills {:optional true} [:vector ::shape/fill]]
+         [:font-family :string]
+         [:font-size :string]
+         [:font-style :string]
+         [:font-weight  :string]
+         [:direction :string]
+         [:text-decoration :string]
+         [:text-transform :string]
+         [:typography-ref-id [:maybe ::sm/uuid]]
+         [:typography-ref-file [:maybe ::sm/uuid]]
+         [:children
+          [:vector {:min 1}
+           [:map
+            [:text :string]
+            [:key :string]
+            [:fills [:vector ::shape/fill]]
+            [:font-family :string]
+            [:font-size :string]
+            [:font-style :string]
+            [:font-weight  :string]
+            [:direction :string]
+            [:text-decoration :string]
+            [:text-transform :string]
+            [:typography-ref-id [:maybe ::sm/uuid]]
+            [:typography-ref-file [:maybe ::sm/uuid]]]]]]]]]]]])
+
+
+
+(sm/def! ::position-data
+  [:vector {:min 1}
+   [:map
+    [:x ::sm/safe-number]
+    [:y ::sm/safe-number]
+    [:width ::sm/safe-number]
+    [:height ::sm/safe-number]
+    [:fills [:vector ::shape/fill]]
+    [:font-family {:optional true} :string]
+    [:font-size {:optional true} :string]
+    [:font-style {:optional true} :string]
+    [:font-weight {:optional true} :string]
+    [:rtl {:optional true} :boolean]
+    [:text {:optional true} :string]
+    [:text-decoration {:optional true} :string]
+    [:text-transform {:optional true} :string]]])
 

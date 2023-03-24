@@ -320,8 +320,7 @@
 
 (sm/def! ::shape-attrs
   [:map {:title "ShapeAttrs"}
-   [:id ::sm/uuid]
-   [:name :string]
+   [:name {:optional true} :string]
    [:component-id {:optional true}  ::sm/uuid]
    [:component-file {:optional true} ::sm/uuid]
    [:component-root {:optional true} :boolean]
@@ -370,8 +369,93 @@
    [:interactions {:optional true} [:vector ::ctsi/interaction]]
    [:shadow {:optional true} ::ctss/shadow]
    [:blur {:optional true} ::ctsb/blur]
+
    ])
 
+(sm/def! ::shape
+  [:multi {:dispatch :type}
+   [:group
+    [:merge
+     ::shape-attrs
+     [:map
+      [:type [:= :group]]
+      [:id ::sm/uuid]
+      [:shapes [:vector {:min 1} ::sm/uuid]]]]]
+
+   [:frame
+    [:merge
+     ::shape-attrs
+     [:map
+      [:type [:= :frame]]
+      [:id ::sm/uuid]
+      [:shapes [:vector {:min 1} ::sm/uuid]]
+      [:file-thumbnail {:optional true} :boolean]
+      [:hide-fill-on-export {:optional true} :boolean]
+      [:show-content {:optional true} :boolean]
+      [:hide-in-viewer {:optional true} :boolean]]]]
+
+   [:bool
+    [:merge
+     ::shape-attrs
+     [:map
+      [:type [:= :bool]]
+      [:id ::sm/uuid]
+      [:shapes [:vector {:min 1} ::sm/uuid]]
+      [:bool-type :keyword] ;; FIXME specify all types
+      [:bool-content [:vector :any]] ;; FIXME specify bool content
+      ]]]
+
+   [:rect
+    [:merge
+     ::shape-attrs
+     [:map
+      [:type [:= :rect]]
+      [:id ::sm/uuid]]]]
+
+   ;; FIXME: revisit circle shape attrs
+   [:circle
+    [:merge
+     ::shape-attrs
+     [:map
+      [:type [:= :circle]]
+      [:id ::sm/uuid]]]]
+
+   [:image
+    [:merge
+     ::shape-attrs
+     [:map
+      [:type [:= :image]]
+      [:id ::sm/uuid]
+      [:metadata
+       [:map
+        [:width :int]
+        [:height :int]
+        [:mtype :string]
+        [:id ::sm/uuid]]]]]]
+
+   [:svg-raw
+    [:merge
+     ::shape-attrs
+     [:map
+      [:type [:= :svg-raw]]
+      [:id ::sm/uuid]]]]
+
+   [:path
+    [:merge
+     ::shape-attrs
+     [:map
+      [:type [:= :path]]
+      [:id ::sm/uuid]
+      [:content :any] ;; FIXME: missing schema for path content
+      ]]]
+
+   [:text
+    [:merge
+     ::shape-attrs
+     [:map
+      [:id ::sm/uuid]
+      [:type [:= :text]]
+      [:content ::ctsx/content]]]]])
 
 ;; --- Initialization
 

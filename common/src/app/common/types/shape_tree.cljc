@@ -12,6 +12,7 @@
    [app.common.geom.shapes :as gsh]
    [app.common.math :as mth]
    [app.common.pages.helpers :as cph]
+   [app.common.schema :as sm]
    [app.common.spec :as us]
    [app.common.types.shape :as cts]
    [app.common.types.shape.layout :as ctl]
@@ -19,6 +20,9 @@
    [clojure.spec.alpha :as s]))
 
 (s/def ::objects (s/map-of uuid? ::cts/shape))
+
+(sm/def! ::objects
+  [:map-of ::sm/uuid ::cts/shape])
 
 (defn add-shape
   "Insert a shape in the tree, at the given index below the given parent or frame.

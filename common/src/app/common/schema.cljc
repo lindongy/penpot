@@ -55,8 +55,10 @@
   (me/humanize exp))
 
 (defn generate
-  [s]
-  (mg/generate (schema s)))
+  ([s]
+   (mg/generate (schema s)))
+  ([s o]
+   (mg/generate (schema s) o)))
 
 (defn form
   [s]
