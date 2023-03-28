@@ -16,6 +16,7 @@
    [app.common.schema :as sm]
    [app.common.spec :as us]
    [app.common.types.color :as ctc]
+   [app.common.types.grid :as-alias ctg]
    [app.common.types.shape.blur :as ctsb]
    [app.common.types.shape.export :as ctse]
    [app.common.types.shape.interactions :as ctsi]
@@ -334,12 +335,14 @@
    [:masked-group? {:optional true} :boolean]
    [:fills {:optional true} [:vector ::fill]]
    [:hide-fill-on-export {:optional true} :boolean]
-   [:font-family {:optional true} :string]
-   [:font-size {:optional true} ::sm/safe-int]
-   [:font-style {:optional true} :string]
-   [:font-weight {:optional true} :string]
-   [:letter-spacing {:optional true} ::sm/safe-number]
-   [:line-height {:optional true} ::sm/safe-number]
+   ;; [:font-family {:optional true} :string]
+   ;; [:font-size {:optional true} ::sm/safe-int]
+   ;; [:font-style {:optional true} :string]
+   ;; [:font-weight {:optional true} :string]
+   ;; [:letter-spacing {:optional true} ::sm/safe-number]
+   ;; [:line-height {:optional true} ::sm/safe-number]
+   ;; [:text-align {:optional true}
+   ;;  [::sm/one-of text-align-types]]
    [:proportion {:optional true} ::sm/safe-number]
    [:proportion-lock {:optional true} :boolean]
    [:constraints-h {:optional true}
@@ -358,18 +361,17 @@
    [:width {:optional true} ::sm/safe-number]
    [:height {:optional true} ::sm/safe-number]
    [:opacity {:optional true} ::sm/safe-number]
+   [:grids {:optional true} [:vector ::ctg/grid]]
    [:exports {:optional true} [:vector ::ctse/export]]
    [:shapes {:optional true} [:vector ::sm/uuid]]
    [:strokes {:optional true} [:vector ::stroke]]
-   [:text-align {:optional true}
-    [::sm/one-of text-align-types]]
    [:transform {:optional true} ::gmt/matrix]
    [:transform-inverse {:optional true} ::gmt/matrix]
    [:blend-mode {:optional true} [::sm/one-of blend-mode]]
    [:interactions {:optional true} [:vector ::ctsi/interaction]]
    [:shadow {:optional true} ::ctss/shadow]
    [:blur {:optional true} ::ctsb/blur]
-
+   [:grow-type [::sm/one-of #{:auto-width :auto-height :fixed}]]
    ])
 
 (sm/def! ::shape
@@ -401,9 +403,17 @@
       [:type [:= :bool]]
       [:id ::sm/uuid]
       [:shapes [:vector {:min 1} ::sm/uuid]]
-      [:bool-type :keyword] ;; FIXME specify all types
-      [:bool-content [:vector :any]] ;; FIXME specify bool content
-      ]]]
+
+      ;; FIXME: improve this schema
+      [:bool-type :keyword]
+
+      ;; FIXME: improve this schema
+      [:bool-content
+       [:vector
+        [:map
+         [:command :keyword]
+         [:relative :boolean]
+         [:params [:map-of :keyword ::sm/safe-number]]]]]]]]
 
    [:rect
     [:merge

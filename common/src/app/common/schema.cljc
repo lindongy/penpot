@@ -22,14 +22,6 @@
    [malli.transform :as mt]
    [malli.util :as mu]))
 
-;; (def registry (atom {}))
-
-;; (def default-registry
-;;   (mr/composite-registry
-;;    m/default-registry
-;;    (mu/schemas)
-;;    (mr/mutable-registry registry)))
-
 (defn validate
   [s value]
   (m/validate s value {:registry sr/default-registry}))
@@ -359,3 +351,21 @@
     ::oapi/type "number"
     ::oapi/format "double"
     ::oapi/decode parse-double}})
+
+(def! ::contains-any
+  {:type ::contains-any
+   :min 1
+   :max 1
+   :compile (fn [props children options]
+              (let [choices (last children)
+                    pred    (if (:strict props)
+                              #(some (fn [prop]
+                                       (some? (get % prop)))
+                                     choices)
+                              #(some (fn [prop]
+                                       (contains? % prop))
+                                     choices))]
+                {:pred pred
+                 :type-properties
+                 {:title "contains"
+                  :description "contains predicate"}}))})

@@ -8,13 +8,19 @@
   (:require
    [app.common.data :as d]
    [app.common.files.features :as ffeat]
+   [app.common.schema :as sm]
    [app.common.spec :as us]
+   [app.common.types.color :as-alias ctc]
+   [app.common.types.grid :as-alias ctpg]
    [app.common.types.page.flow :as ctpf]
-   [app.common.types.page.grid :as ctpg]
    [app.common.types.page.guide :as ctpu]
    [app.common.types.shape :as cts]
    [app.common.uuid :as uuid]
    [clojure.spec.alpha :as s]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SPECS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; --- Background color
 
@@ -36,6 +42,30 @@
 
 (s/def ::page
   (s/keys :req-un [::id ::name ::objects ::options]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SCHEMAS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(sm/def! ::page
+  [:map {:title "FilePage"}
+   [:id ::sm/uuid]
+   [:name :string]
+   [:objects
+    [:map-of ::sm/uuid ::cts/shape]]
+   [:options
+    [:map {:title "PageOptions"}
+     ;; FIXME
+     [:background {:optional true} ::ctc/rgb-color]
+     [:saved-grids {:optional true} ::ctpg/saved-grids]
+     [:flows {:optional true}
+      [:vector ::ctpf/flow]]
+     [:guides {:optional true}
+      [:vector ::ctpu/guide]]]]])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; INIT & HELPERS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; --- Initialization
 

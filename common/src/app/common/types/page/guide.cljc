@@ -6,8 +6,13 @@
 
 (ns app.common.types.page.guide
   (:require
+   [app.common.schema :as sm]
    [app.common.spec :as us]
    [clojure.spec.alpha :as s]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SPECS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; --- Page guides
 
@@ -25,3 +30,13 @@
 (s/def ::guides
   (s/map-of uuid? ::guide))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SCHEMAS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(sm/def! ::guide
+  [:map {:title "PageGuide"}
+   [:id ::sm/uuid]
+   [:axis [::sm/one-of #{:x :y}]]
+   [:position ::sm/safe-number]
+   [:frame-id {:optional true} [:maybe ::sm/uuid]]])

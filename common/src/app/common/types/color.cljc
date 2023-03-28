@@ -17,6 +17,10 @@
     [clojure.spec.alpha :as s]
     [clojure.test.check.generators :as tgen]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SPECS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; TODO: maybe define ::color-hex-string with proper hex color spec?
 
 ;; --- GRADIENTS
@@ -50,6 +54,49 @@
                    ::color-gradient/end-y
                    ::color-gradient/width
                    ::color-gradient/stops]))
+
+;; --- COLORS
+
+(s/def ::color-generic/name string?)
+(s/def ::color-generic/path (s/nilable string?))
+(s/def ::color-generic/value (s/nilable string?))
+(s/def ::color-generic/color (s/nilable ::us/rgb-color-str))
+(s/def ::color-generic/opacity (s/nilable ::us/safe-number))
+(s/def ::color-generic/gradient (s/nilable ::gradient))
+(s/def ::color-generic/ref-id uuid?)
+(s/def ::color-generic/ref-file uuid?)
+
+;; FIXME: looks completly unused
+(s/def ::shape-color
+  (s/keys :req-un [:us/color
+                   ::color-generic/opacity]
+          :opt-un [::color-generic/gradient
+                   ::color-generic/ref-id
+                   ::color-generic/ref-file]))
+
+(s/def ::color
+  (s/keys :opt-un [::id
+                   ::color-generic/name
+                   ::color-generic/path
+                   ::color-generic/value
+                   ::color-generic/color
+                   ::color-generic/opacity
+                   ::color-generic/gradient]))
+
+(s/def ::recent-color
+  (s/and
+   (s/keys :opt-un [::color-generic/value
+                    ::color-generic/color
+                    ::color-generic/opacity
+                    ::color-generic/gradient])
+   (fn [o]
+     (or (contains? o :gradient)
+         (contains? o :color)))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SCHEMAS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def rgb-color-re
   #"^#(?:[0-9a-fA-F]{3}){1,2}$")
@@ -87,46 +134,29 @@
       [:opacity ::sm/safe-number]
       [:offset ::sm/safe-number]]]]])
 
-;; --- COLORS
 
-(s/def ::color-generic/name string?)
-(s/def ::color-generic/path (s/nilable string?))
-(s/def ::color-generic/value (s/nilable string?))
-(s/def ::color-generic/color (s/nilable ::us/rgb-color-str))
-(s/def ::color-generic/opacity (s/nilable ::us/safe-number))
-(s/def ::color-generic/gradient (s/nilable ::gradient))
-(s/def ::color-generic/ref-id uuid?)
-(s/def ::color-generic/ref-file uuid?)
+(sm/def! ::color
+  [:map
+   [:id {:optional true} ::sm/uuid]
+   [:name {:optional true} :string]
+   [:path {:optional true} [:maybe :string]]
+   [:value {:optional true} [:maybe :string]]
+   [:color {:optional true} [:maybe ::rgb-color]]
+   [:opacity {:optional true} [:maybe ::sm/safe-number]]
+   [:ref-id {:optional true} ::sm/uuid]
+   [:ref-file {:optional true} ::sm/uuid]
+   [:gradient [:maybe ::gradient]]])
 
-(s/def ::shape-color
-  (s/keys :req-un [:us/color
-                   ::color-generic/opacity]
-          :opt-un [::color-generic/gradient
-                   ::color-generic/ref-id
-                   ::color-generic/ref-file]))
+(sm/def! ::recent-color
+  [:and
+   ::color
+   [::sm/contains-any {:strict true} [:color :gradient]]])
 
-(s/def ::color
-  (s/keys :opt-un [::id
-                   ::color-generic/name
-                   ::color-generic/path
-                   ::color-generic/value
-                   ::color-generic/color
-                   ::color-generic/opacity
-                   ::color-generic/gradient]))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; HELPERS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(s/def ::recent-color
-  (s/and
-   (s/keys :opt-un [::color-generic/value
-                    ::color-generic/color
-                    ::color-generic/opacity
-                    ::color-generic/gradient])
-   (fn [o]
-     (or (contains? o :gradient)
-         (contains? o :color)))))
-
-;; --- Helpers for color in different parts of a shape
-
-;; fill
+;; --- fill
 
 (defn fill->shape-color
   [fill]

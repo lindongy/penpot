@@ -6,7 +6,12 @@
 
 (ns app.common.types.page.flow
   (:require
+   [app.common.schema :as sm]
    [clojure.spec.alpha :as s]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SPECS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; --- Interaction Flows
 
@@ -22,3 +27,13 @@
 (s/def ::flows
   (s/coll-of ::flow :kind vector?))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SCHEMAS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(sm/def! ::flow
+  [:map {:title "PageFlow"}
+   [:id ::sm/uuid]
+   [:name :string]
+   [:starting-frame ::sm/uuid]])

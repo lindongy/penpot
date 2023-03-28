@@ -13,6 +13,7 @@
    [app.common.geom.shapes :as gsh]
    [app.common.pages.common :refer [file-version]]
    [app.common.pages.helpers :as cph]
+   [app.common.schema :as sm]
    [app.common.types.color :as ctc]
    [app.common.types.colors-list :as ctcl]
    [app.common.types.component :as ctk]
@@ -28,7 +29,9 @@
    [clojure.spec.alpha :as s]
    [cuerdas.core :as str]))
 
-;; Specs
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SPECS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (s/def ::colors
   (s/map-of uuid? ::ctc/color))
@@ -60,7 +63,30 @@
                    ::typographies
                    ::media]))
 
-;; Initialization
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SCHEMA
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(sm/def! ::data
+  [:map {:title "FileData"}
+   [:pages [:vector ::sm/uuid]]
+   [:pages-index
+    [:map-of ::sm/uuid ::ctp/page]]
+   [:colors {:optional true}
+    [:map-of ::sm/uuid ::ctc/color]]
+   [:components {:optional true}
+    [:map-of ::sm/uuid ::ctn/container]]
+   [:recent-colors {:optional true}
+    [:vector ::ctc/recent-color]]
+   [:typographies {:optional true}
+    [:map-of ::sm/uuid ::cty/typography]]
+   [:media {:optional true}
+    [:map-of ::sm/uuid ::ctfm/media-object]]])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; INITIALIZATION
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def empty-file-data
   {:version file-version
@@ -387,6 +413,7 @@
                         (some? (:component-file %))
                         (assoc :component-file (:id file-data)))
                      main-instance-shapes)
+
                 ; Add all shapes of the main instance to the library page
                 add-main-instance-shapes
                 (fn [page]
