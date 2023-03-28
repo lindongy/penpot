@@ -36,6 +36,14 @@
 
     (apply vector :map params)))
 
+(defmethod visit :multi [name schema children options]
+  (let [props (m/properties schema)]
+    (if (::simplified props)
+      [:multi (-> props
+                  (dissoc ::simplified)
+                  (assoc :options (into #{} (map first children))))]
+      (m/form schema options))))
+
 (defmethod visit :merge [_ schema children options]
   (apply vector :merge children))
 

@@ -16,13 +16,12 @@
    [app.common.pages.common :refer [component-sync-attrs]]
    [app.common.pages.helpers :as cph]
    [app.common.schema :as sm]
-   [app.common.schema.describe :as smd]
+   [app.common.schema.describe2 :as smd]
    [app.common.spec :as us]
    [app.common.types.colors-list :as ctcl]
    [app.common.types.components-list :as ctkl]
    [app.common.types.container :as ctn]
    [app.common.types.file :as ctf]
-   [app.common.types.file.media-object :as ctfm]
    [app.common.types.page :as ctp]
    [app.common.types.pages-list :as ctpl]
    [app.common.types.shape :as cts]
@@ -34,7 +33,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (sm/def! ::operation
-  [:multi {:dispatch :type :title "Operation"}
+  [:multi {:dispatch :type :title "Operation" ::smd/simplified true}
    [:set
     [:map {:title "SetOperation"}
      [:type [:= :set]]
@@ -53,21 +52,21 @@
 
 (sm/def! ::change
   [:schema
-   [:multi {:dispatch :type :title "Change"}
+   [:multi {:dispatch :type :title "Change" ::smd/simplified true}
     [:set-option
      [:map {:title "SetOptionChange"}
       [:type [:= :set-option]]
       [:page-id ::sm/uuid]
       [:option [:union
                 [:keyword]
-                [:vector :keyword]]]
+                [:vector {:gen/max 10} :keyword]]]
       [:value :any]]]
 
     [:add-obj
      [:map {:title "AddObjChange"}
       [:type [:= :add-obj]]
       [:id ::sm/uuid]
-      [:obj [:map-of :keyword :any]]
+      [:obj [:map-of {:gen/max 10} :keyword :any]]
       [:page-id {:optional true} ::sm/uuid]
       [:component-id {:optional true} ::sm/uuid]
       [:frame-id ::sm/uuid]
@@ -82,7 +81,7 @@
       [:id ::sm/uuid]
       [:page-id {:optional true} ::sm/uuid]
       [:component-id {:optional true} ::sm/uuid]
-      [:operations [:vector ::operation]]]]
+      [:operations [:vector {:gen/max 5} ::operation]]]]
 
     [:del-obj
      [:map {:title "DelObjChange"}
@@ -132,7 +131,7 @@
       [:type [:= :reg-objects]]
       [:page-id {:optional true} ::sm/uuid]
       [:component-id {:optional true} ::sm/uuid]
-      [:shapes [:vector ::sm/uuid]]]]
+      [:shapes [:vector {:gen/max 5} ::sm/uuid]]]]
 
     [:add-color
      [:map {:title "AddColorChange"}
@@ -157,12 +156,12 @@
     [:add-media
      [:map {:title "AddMediaChange"}
       [:type [:= :add-media]]
-      [:object ::ctfm/media-object]]]
+      [:object ::ctf/media-object]]]
 
     [:mod-media
      [:map {:title "ModMediaChange"}
       [:type [:= :mod-media]]
-      [:object ::ctfm/media-object]]]
+      [:object ::ctf/media-object]]]
 
     [:del-media
      [:map {:title "DelMediaChange"}
@@ -174,14 +173,14 @@
       [:type [:= :add-component]]
       [:id ::sm/uuid]
       [:name :string]
-      [:shapes [:vector :any]]
+      [:shapes [:vector {:gen/max 3} :any]]
       [:path {:optional true} :string]]]
 
     [:mod-component
      [:map {:title "ModCompoenentChange"}
       [:type [:= :mod-component]]
       [:id ::sm/uuid]
-      [:shapes {:optional true} [:vector :any]]
+      [:shapes {:optional true} [:vector {:gen/max 3} :any]]
       [:name {:optional true} :string]]]
 
     [:del-component
@@ -200,6 +199,7 @@
       [:type [:= :purge-component]]
       [:id ::sm/uuid]]]
 
+    ;; FIXME: add impl
     ;; [:add-typography :any]
     ;; [:mod-typography :any]
     ;; [:del-typography :any]

@@ -46,7 +46,7 @@
           (fmt-schema [mdata key]
             (when-let [schema (get mdata key)]
               (-> (smd/describe (sm/schema schema))
-                  (pp/pprint-str {:level 5 :width 70}))))
+                  (pp/pprint-str {:level 8 :width 70}))))
 
           (get-context [type mdata]
             {:type (d/name type)
@@ -114,7 +114,7 @@
   [methods]
   (letfn [(gen-response-doc [tsx schema]
             (let [schema  (sm/schema schema)
-                  example (sg/generate schema)
+                  example (sm/generate schema)
                   example (sm/encode schema example output-transformer)]
               {:default
                {:description "A default response"
@@ -124,7 +124,7 @@
                   :example example}}}}))
 
           (gen-params-doc [tsx schema]
-            (let [example (sg/generate schema)
+            (let [example (sm/generate schema)
                   example (sm/encode schema example output-transformer)]
               {:required true
                :content
