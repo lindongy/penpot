@@ -9,11 +9,17 @@
    [app.common.geom.point :as gpt]
    [app.common.geom.shapes :as gsh]
    [app.common.pages.common :as common]
+   [app.common.schema :as sm]
    [app.common.spec :as us]
    [app.common.types.components-list :as ctkl]
    [app.common.types.pages-list :as ctpl]
+   [app.common.types.shape :as-alias cts]
    [app.common.types.shape-tree :as ctst]
    [clojure.spec.alpha :as s]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SPEC
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (s/def ::type #{:page :component})
 (s/def ::id uuid?)
@@ -23,6 +29,22 @@
 (s/def ::container
   (s/keys :req-un [::id ::name]
           :opt-un [::type ::path ::ctst/objects]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SCHEMA
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(sm/def! ::container
+  [:map
+   [:id ::sm/uuid]
+   [:name :string]
+   [:path {:optional true} [:maybe :string]]
+   [:objects {:optional true}
+    [:map-of {:gen/max 10} ::sm/uuid ::cts/shape]]])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; HELPERS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn make-container
   [page-or-component type]

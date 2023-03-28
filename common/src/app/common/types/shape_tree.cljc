@@ -21,9 +21,6 @@
 
 (s/def ::objects (s/map-of uuid? ::cts/shape))
 
-(sm/def! ::objects
-  [:map-of ::sm/uuid ::cts/shape])
-
 (defn add-shape
   "Insert a shape in the tree, at the given index below the given parent or frame.
   Update the parent as needed."

@@ -84,32 +84,21 @@
 (def node-types #{"root" "paragraph-set" "paragraph"})
 
 (sm/def! ::content
-  [:schema
-   {:registry {::node
-               [:map
-                [:type [::sm/one-of node-types]]
-                [:key {:optional true} :string]
-                [:children {:optional true} [:vector {:min 1} [:ref ::node]]]]
-               ::text
-               [:map
-                [:text :string]]}}
-   [:or ::node ::text]])
-
-(sm/def! ::content
   [:map
    [:type [:= "root"]]
    [:key {:optional true} :string]
    [:children
-    [:vector {:min 1}
+    [:vector {:min 1 :gen/max 2 :gen/min 1}
      [:map
       [:type [:= "paragraph-set"]]
       [:key {:optional true} :string]
       [:children
-       [:vector {:min 1}
+       [:vector {:min 1 :gen/max 2 :gen/min 1}
         [:map
          [:type [:= "paragraph"]]
          [:key {:optional true} :string]
-         [:fills {:optional true} [:vector ::shape/fill]]
+         [:fills {:optional true}
+          [:vector {:gen/max 2} ::shape/fill]]
          [:font-family :string]
          [:font-size :string]
          [:font-style :string]
@@ -120,11 +109,11 @@
          [:typography-ref-id [:maybe ::sm/uuid]]
          [:typography-ref-file [:maybe ::sm/uuid]]
          [:children
-          [:vector {:min 1}
+          [:vector {:min 1 :gen/max 2 :gen/min 1}
            [:map
             [:text :string]
             [:key :string]
-            [:fills [:vector ::shape/fill]]
+            [:fills [:vector {:gen/max 2} ::shape/fill]]
             [:font-family :string]
             [:font-size :string]
             [:font-style :string]
@@ -138,13 +127,13 @@
 
 
 (sm/def! ::position-data
-  [:vector {:min 1}
+  [:vector {:min 1 :gen/max 2}
    [:map
     [:x ::sm/safe-number]
     [:y ::sm/safe-number]
     [:width ::sm/safe-number]
     [:height ::sm/safe-number]
-    [:fills [:vector ::shape/fill]]
+    [:fills [:vector {:gen/max 2} ::shape/fill]]
     [:font-family {:optional true} :string]
     [:font-size {:optional true} :string]
     [:font-style {:optional true} :string]

@@ -128,7 +128,7 @@
    [:end-y ::sm/safe-number]
    [:width ::sm/safe-number]
    [:stops
-    [:vector {:min 1}
+    [:vector {:min 1 :gen/max 2}
      [:map {:title "GradientStop"}
       [:color ::rgb-color]
       [:opacity ::sm/safe-number]

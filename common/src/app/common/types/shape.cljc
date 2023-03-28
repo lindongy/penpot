@@ -292,7 +292,7 @@
    [:height ::sm/safe-number]])
 
 (sm/def! ::points
-  [:vector ::gpt/point])
+  [:vector {:gen/max 5} ::gpt/point])
 
 (sm/def! ::fill
   [:map {:title "Fill" :min 1}
@@ -333,7 +333,8 @@
    [:locked {:optional true} :boolean]
    [:hidden {:optional true} :boolean]
    [:masked-group? {:optional true} :boolean]
-   [:fills {:optional true} [:vector ::fill]]
+   [:fills {:optional true}
+    [:vector {:gen/max 2} ::fill]]
    [:hide-fill-on-export {:optional true} :boolean]
    ;; [:font-family {:optional true} :string]
    ;; [:font-size {:optional true} ::sm/safe-int]
@@ -361,15 +362,19 @@
    [:width {:optional true} ::sm/safe-number]
    [:height {:optional true} ::sm/safe-number]
    [:opacity {:optional true} ::sm/safe-number]
-   [:grids {:optional true} [:vector ::ctg/grid]]
-   [:exports {:optional true} [:vector ::ctse/export]]
-   [:shapes {:optional true} [:vector ::sm/uuid]]
-   [:strokes {:optional true} [:vector ::stroke]]
+   [:grids {:optional true}
+    [:vector {:gen/max 2} ::ctg/grid]]
+   [:exports {:optional true}
+    [:vector {:gen/max 2} ::ctse/export]]
+   [:strokes {:optional true}
+    [:vector {:gen/max 2} ::stroke]]
    [:transform {:optional true} ::gmt/matrix]
    [:transform-inverse {:optional true} ::gmt/matrix]
    [:blend-mode {:optional true} [::sm/one-of blend-mode]]
-   [:interactions {:optional true} [:vector ::ctsi/interaction]]
-   [:shadow {:optional true} ::ctss/shadow]
+   [:interactions {:optional true}
+    [:vector {:gen/max 2} ::ctsi/interaction]]
+   [:shadow {:optional true}
+    [:vector {:gen/max 1} ::ctss/shadow]]
    [:blur {:optional true} ::ctsb/blur]
    [:grow-type [::sm/one-of #{:auto-width :auto-height :fixed}]]
    ])
@@ -382,7 +387,7 @@
      [:map
       [:type [:= :group]]
       [:id ::sm/uuid]
-      [:shapes [:vector {:min 1} ::sm/uuid]]]]]
+      [:shapes [:vector {:min 1 :gen/max 10 :gen/min 1} ::sm/uuid]]]]]
 
    [:frame
     [:merge
@@ -390,7 +395,7 @@
      [:map
       [:type [:= :frame]]
       [:id ::sm/uuid]
-      [:shapes [:vector {:min 1} ::sm/uuid]]
+      [:shapes [:vector {:min 1 :gen/max 10 :gen/min 1} ::sm/uuid]]
       [:file-thumbnail {:optional true} :boolean]
       [:hide-fill-on-export {:optional true} :boolean]
       [:show-content {:optional true} :boolean]
@@ -402,18 +407,18 @@
      [:map
       [:type [:= :bool]]
       [:id ::sm/uuid]
-      [:shapes [:vector {:min 1} ::sm/uuid]]
+      [:shapes [:vector {:min 1 :gen/max 10 :gen/min 1} ::sm/uuid]]
 
       ;; FIXME: improve this schema
       [:bool-type :keyword]
 
       ;; FIXME: improve this schema
       [:bool-content
-       [:vector
+       [:vector {:gen/max 2}
         [:map
          [:command :keyword]
          [:relative :boolean]
-         [:params [:map-of :keyword ::sm/safe-number]]]]]]]]
+         [:params [:map-of {:gen/max 5} :keyword ::sm/safe-number]]]]]]]]
 
    [:rect
     [:merge

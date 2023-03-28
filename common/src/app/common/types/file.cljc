@@ -68,21 +68,31 @@
 ;; SCHEMA
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(sm/def! ::media-object
+  [:map {:title "FileMediaObject"}
+   [:id ::sm/uuid]
+   [:name :string]
+   [:width ::sm/safe-int]
+   [:height ::sm/safe-int]
+   [:mtype :string]
+   [:path {:optional true} [:maybe :string]]])
+
 (sm/def! ::data
   [:map {:title "FileData"}
    [:pages [:vector ::sm/uuid]]
    [:pages-index
-    [:map-of ::sm/uuid ::ctp/page]]
+    [:map-of {:gen/max 5} ::sm/uuid ::ctp/page]]
    [:colors {:optional true}
-    [:map-of ::sm/uuid ::ctc/color]]
+    [:map-of {:gen/max 5} ::sm/uuid ::ctc/color]]
    [:components {:optional true}
-    [:map-of ::sm/uuid ::ctn/container]]
+    [:map-of {:gen/max 5} ::sm/uuid ::ctn/container]]
    [:recent-colors {:optional true}
-    [:vector ::ctc/recent-color]]
+    [:vector {:gen/max 3} ::ctc/recent-color]]
    [:typographies {:optional true}
-    [:map-of ::sm/uuid ::cty/typography]]
+    [:map-of {:gen/max 2} ::sm/uuid ::cty/typography]]
    [:media {:optional true}
-    [:map-of ::sm/uuid ::ctfm/media-object]]])
+    [:map-of {:gen/max 5} ::sm/uuid ::media-object]]
+   ])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; INITIALIZATION

@@ -59,19 +59,19 @@
 (def styles #{:drop-shadow :inner-shadow})
 
 (sm/def! ::shadow
-  [:vector
-   [:map
-    [:id [:maybe ::sm/uuid]]
-    [:style [::sm/one-of styles]]
-    [:offset-x ::sm/safe-number]
-    [:offset-y ::sm/safe-number]
-    [:blur ::sm/safe-number]
-    [:spread ::sm/safe-number]
-    [:hidden :boolean]
-    [:color
-     [:map
-      [:color {:optional true} :string]
-      [:opacity {:optional true} ::sm/safe-number]
-      [:gradient {:optional true} [:maybe ::ctc/gradient]]
-      [:file-id {:optional true} [:maybe ::sm/uuid]]
-      [:id {:optional true} [:maybe ::sm/uuid]]]]]])
+  [:map
+   [:id [:maybe ::sm/uuid]]
+   [:style [::sm/one-of styles]]
+   [:offset-x ::sm/safe-number]
+   [:offset-y ::sm/safe-number]
+   [:blur ::sm/safe-number]
+   [:spread ::sm/safe-number]
+   [:hidden :boolean]
+    ;;FIXME: reuse color?
+   [:color
+    [:map
+     [:color {:optional true} :string]
+     [:opacity {:optional true} ::sm/safe-number]
+     [:gradient {:optional true} [:maybe ::ctc/gradient]]
+     [:file-id {:optional true} [:maybe ::sm/uuid]]
+     [:id {:optional true} [:maybe ::sm/uuid]]]]])

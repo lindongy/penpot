@@ -10,6 +10,11 @@
    [app.common.schema :as sm]
    [clojure.spec.alpha :as s]))
 
+;; FIXME: deprecated
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; SPEC
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (s/def ::id uuid?)
 (s/def ::name string?)
 (s/def ::width ::us/safe-integer)
@@ -28,12 +33,3 @@
                    ::height
                    ::mtype]
           :opt-un [::path]))
-
-(sm/def! ::media-object
-  [:map {:title "FileMediaObject"}
-   [:id ::sm/uuid]
-   [:name :string]
-   [:width ::sm/safe-int]
-   [:height ::sm/safe-int]
-   [:mtype :string]
-   [:path {:optional true} [:maybe :string]]])

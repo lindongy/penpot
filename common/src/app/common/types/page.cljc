@@ -47,21 +47,33 @@
 ;; SCHEMAS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(sm/def! ::flow
+  [:map {:title "PageFlow"}
+   [:id ::sm/uuid]
+   [:name :string]
+   [:starting-frame ::sm/uuid]])
+
+(sm/def! ::guide
+  [:map {:title "PageGuide"}
+   [:id ::sm/uuid]
+   [:axis [::sm/one-of #{:x :y}]]
+   [:position ::sm/safe-number]
+   [:frame-id {:optional true} [:maybe ::sm/uuid]]])
+
 (sm/def! ::page
   [:map {:title "FilePage"}
    [:id ::sm/uuid]
    [:name :string]
    [:objects
-    [:map-of ::sm/uuid ::cts/shape]]
+    [:map-of {:gen/max 5} ::sm/uuid ::cts/shape]]
    [:options
     [:map {:title "PageOptions"}
-     ;; FIXME
      [:background {:optional true} ::ctc/rgb-color]
      [:saved-grids {:optional true} ::ctpg/saved-grids]
      [:flows {:optional true}
-      [:vector ::ctpf/flow]]
+      [:vector {:gen/max 2} ::flow]]
      [:guides {:optional true}
-      [:vector ::ctpu/guide]]]]])
+      [:vector {:gen/max 2} ::guide]]]]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; INIT & HELPERS
@@ -110,6 +122,3 @@
 (defn get-frame-flow
   [flows frame-id]
   (d/seek #(= (:starting-frame %) frame-id) flows))
-
-
-
