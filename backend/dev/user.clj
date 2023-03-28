@@ -18,7 +18,6 @@
    [app.common.schema :as sm]
    [app.common.schema.generators :as sg]
    [app.common.schema.describe :as smd]
-   [app.common.schema.describe2 :as smd2]
    [app.config :as cfg]
    [app.main :as main]
    [malli.core :as m]

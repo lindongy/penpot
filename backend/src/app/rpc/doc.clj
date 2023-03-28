@@ -11,7 +11,7 @@
    [app.common.exceptions :as ex]
    [app.common.pprint :as pp]
    [app.common.schema :as sm]
-   [app.common.schema.describe2 :as smd]
+   [app.common.schema.describe :as smd]
    [app.common.schema.generators :as sg]
    [app.common.schema.openapi :as oapi]
    [app.common.schema.registry :as sr]
