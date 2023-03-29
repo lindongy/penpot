@@ -7,6 +7,7 @@
 (ns app.main.data.workspace.libraries
   (:require
    [app.common.data :as d]
+   [app.common.data.macros :as dma]
    [app.common.files.features :as ffeat]
    [app.common.geom.point :as gpt]
    [app.common.geom.shapes :as gsh]
@@ -964,3 +965,6 @@
                     :library-id library-id}]
         (->> (rp/cmd! :unlink-file-from-library params)
              (rx/ignore))))))
+
+
+(dma/export dwlh/generate-instantiate-component)

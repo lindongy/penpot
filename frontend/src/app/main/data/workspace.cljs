@@ -51,7 +51,6 @@
    [app.main.data.workspace.layers :as dwly]
    [app.main.data.workspace.layout :as layout]
    [app.main.data.workspace.libraries :as dwl]
-   [app.main.data.workspace.libraries-helpers :as dwlh]
    [app.main.data.workspace.media :as dwm]
    [app.main.data.workspace.notifications :as dwn]
    [app.main.data.workspace.path :as dwdp]
@@ -1611,7 +1610,9 @@
                   (->> selected
                        (map #(get-in paste-objects [% :id]))
                        (reduce set-index [{} (inc index)])
-                       first)]
+                       first)
+
+                  _ (prn "map-ids" map-ids)]
               (if (and (= :add-obj (:type change))
                        (contains? map-ids (:old-id change)))
                 (assoc change :index (get map-ids (:old-id change)))
@@ -1648,13 +1649,16 @@
                                              :shapes []}
 
                                 instantiate-component
-                                (fn [change-data file-id component pos page libraries]
-                                  (dwlh/generate-instantiate-component (:changes change-data)
-                                                                       file-id
-                                                                       (:component-id component)
-                                                                       pos
-                                                                       page
-                                                                       libraries))
+                                (fn [change-data file-id component page libraries]
+                                  (let [moved-component (gsh/move component delta)
+                                        pos             (gpt/point (:x moved-component) (:y moved-component))]
+                                    (dwl/generate-instantiate-component (:changes change-data)
+                                                                        file-id
+                                                                        (:component-id component)
+                                                                        pos
+                                                                        page
+                                                                        libraries
+                                                                        (:id component))))
 
                                 restore-component
                                 (fn [change-data file-id component page delta]
@@ -1663,16 +1667,14 @@
                                     [(:shape restore-changes)
                                      (pcb/concat-changes (:changes change-data) (:changes restore-changes))]))
 
-                                ;; (ctkl/get-component workspace-data component-id)
                                 generate-change (fn [change-data component]
-                                                  (let [component-id (:component-id component)
-                                                        main-component    (ctf/get-component libraries file-id component-id)
-                                                        moved-component   (gsh/move component delta)
-                                                        pos               (gpt/point (:x moved-component) (:y moved-component))
+                                                  (let [component-id    (:component-id component)
+                                                        _ (prn "generate-change" (:id component))
+                                                        main-component  (ctf/get-component libraries file-id component-id)
                                                         [new-shape new-changes]
                                                         (if (nil? main-component)
                                                           (restore-component change-data file-id component page delta)
-                                                          (instantiate-component change-data file-id component pos page libraries))]
+                                                          (instantiate-component change-data file-id component page libraries))]
                                                     {:changes new-changes :shapes (conj (:shapes change-data) (:id new-shape))}))
 
                                 change-data (reduce generate-change change-data component-vals)]
@@ -1690,7 +1692,6 @@
 
                   process-shape
                   (fn [_ shape]
-                    (js/console.log "process-shape" (clj->js shape))
                     (-> shape
                         (assoc :frame-id frame-id)
                         (assoc :parent-id parent-id)
@@ -1706,26 +1707,39 @@
                   objects (:objects page)
 
 
-
                   ;; remove the components from paste-objects and selected, and generete their own changes
-                  [paste-objects selected component-changes] (paste-components paste-objects selected page it file-id state delta)
+                  [paste-objects-without-components selected-without-components component-changes] (paste-components paste-objects selected page it file-id state delta)
 
-                  _ (prn component-changes)
+                  paste-objects-without-components (->> paste-objects-without-components (d/mapm process-shape))
 
+                  all-objects (merge objects paste-objects-without-components)
 
-                  paste-objects (->> paste-objects (d/mapm process-shape))
+                  changes-without-components  (-> (dws/prepare-duplicate-changes all-objects page selected-without-components delta it nil)
+                                                  (pcb/amend-changes (partial process-rchange media-idx)))
 
-                  all-objects (merge objects paste-objects)
-
-                  changes  (-> (dws/prepare-duplicate-changes all-objects page selected delta it nil)
-                               (pcb/amend-changes (partial process-rchange media-idx))
-                               (pcb/amend-changes (partial change-add-obj-index paste-objects selected index)))
 
                   ;; Adds a resize-parents operation so the groups are updated. We add all the new objects
-                  new-objects-ids (->> changes :redo-changes (filter #(= (:type %) :add-obj)) (mapv :id))
-                  changes (pcb/resize-parents changes new-objects-ids)
+                  new-objects-ids (->> changes-without-components :redo-changes (filter #(= (:type %) :add-obj)) (mapv :id))
+                  changes-without-components (pcb/resize-parents changes-without-components new-objects-ids)
 
-                  changes (pcb/concat-changes changes (:changes component-changes))
+                  ;;Concat the changes for components and the changes of non-components
+                  changes (pcb/concat-changes changes-without-components (:changes component-changes))
+
+
+
+                  changes (pcb/amend-changes changes (partial change-add-obj-index paste-objects selected index))
+
+                  _ (js/console.log "changes1" (clj->js changes))
+
+                  ordered-redo (let [sorted-maps (sort-by :index (:redo-changes changes))
+                                     null-maps (filter #(nil? (:index %)) (:redo-changes changes))]
+                                 (concat sorted-maps null-maps))
+
+                  changes (assoc changes :redo-changes (vec ordered-redo))
+
+                  _ (js/console.log "changes2" (clj->js changes))
+
+
 
 
                   selected  (->> changes

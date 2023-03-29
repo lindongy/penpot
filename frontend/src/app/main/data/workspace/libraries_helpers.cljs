@@ -146,24 +146,29 @@
 
 (defn generate-instantiate-component
   "Generate changes to create a new instance from a component."
-  [changes file-id component-id position page libraries]
-  (let [component     (ctf/get-component libraries file-id component-id)
-        library       (get libraries file-id)
+  ([changes file-id component-id position page libraries]
+   (generate-instantiate-component changes file-id component-id position page libraries nil))
+  ([changes file-id component-id position page libraries old-id]
+   (let [component     (ctf/get-component libraries file-id component-id)
+         library       (get libraries file-id)
 
-        components-v2 (dm/get-in library [:data :options :components-v2])
+         components-v2 (dm/get-in library [:data :options :components-v2])
 
-        [new-shape new-shapes]
-        (ctn/make-component-instance page
-                                     component
-                                     (:data library)
-                                     position
-                                     components-v2)
+         [new-shape new-shapes]
+         (ctn/make-component-instance page
+                                      component
+                                      (:data library)
+                                      position
+                                      components-v2)
 
-        changes (reduce #(pcb/add-object %1 %2 {:ignore-touched true})
-                        changes
-                        new-shapes)]
+         changes (cond-> (pcb/add-object changes (first new-shapes) {:ignore-touched true})
+                     (some? old-id) (pcb/amend-last-change #(assoc % :old-id old-id)))
 
-    [new-shape changes]))
+         changes (reduce #(pcb/add-object %1 %2 {:ignore-touched true})
+                         changes
+                         (rest new-shapes))]
+
+     [new-shape changes])))
 
 (defn generate-detach-instance
   "Generate changes to remove the links between a shape and all its children
