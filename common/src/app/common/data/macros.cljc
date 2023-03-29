@@ -127,3 +127,17 @@
   (if (:ns &env)
     (list (symbol ".") (with-meta obj {:tag 'js}) (symbol (str "-" (c/name prop))))
     `(c/get ~obj ~prop)))
+
+(defmacro assert!
+  [& [expr hint]]
+  (let [hint (or hint (str "expr assert: " (pr-str expr)))]
+    (when *assert*
+      `(when-not ~expr
+         (throw (ex-info ~hint
+                         {:type :assertion
+                          :code :expr-validation
+                          :hint ~hint}))))))
+(defmacro verify!
+  [& [expr hint]]
+  (binding [*assert* true]
+    (assert! expr hint)))

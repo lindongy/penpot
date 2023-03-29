@@ -111,7 +111,7 @@
 
     :gen/gen (->> tgen/any
                   (tgen/fmap (fn [_]
-                               #?(:clj (format "%x" (rand-int 16rFFFFFF))
+                               #?(:clj (format "%06x" (rand-int 16rFFFFFF))
                                   :cljs (.toString (rand-int 16rFFFFFF) 16))))
                   (tgen/fmap (fn [x]
                                (str "#" x))))

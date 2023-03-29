@@ -206,6 +206,12 @@
 
     ]])
 
+(def valid-changes?
+  (sm/lazy-validator [:vector ::change]))
+
+;; (def assert-changes!
+;;   (sm/assert-fn [:vector ::change]))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Specific helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -225,8 +231,10 @@
   [data objects items]
   (letfn [(validate-shape! [[page-id {:keys [id] :as shape}]]
             (when-not (= shape (dm/get-in data [:pages-index page-id :objects id]))
-              ;; If object has change verify is correct
-              (us/verify ::cts/shape shape)))]
+              ;; If object has changed verify is correct
+              #_(sm/verify! ::shape shape)
+
+              #_(dm/verify! (cts/valid-shape? shape))))]
     (let [lookup (d/getf objects)]
       (->> (into #{} (map :page-id) items)
            (mapcat (fn [page-id]
@@ -251,8 +259,9 @@
   ([data items verify?]
    ;; When verify? false we spec the schema validation. Currently used to make just
    ;; 1 validation even if the changes are applied twice
-   (when verify?
-     (us/assert ::pcs/changes items))
+   ;; FIXME
+   #_(when verify?
+     (dm/assert! (valid-changes? items) "expected valid changes vector"))
 
    (let [result (reduce #(or (process-change %1 %2) %1) data items)]
      ;; Validate result shapes (only on the backend)

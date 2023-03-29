@@ -234,58 +234,54 @@
      [:easing [::sm/one-of easing-types]]
      [:direction [::sm/one-of direction-types]]]]])
 
+;; FIXME: generator generates invalid data
 (sm/def! ::interaction
-  [:merge
-   [:map {:title "InteractionClassifier"}
-    [:event-type
-     [::sm/one-of event-types]]
-    [:action-type
-     [::sm/one-of action-types]]]
-   [:multi {:dispatch :event-type}
-    [:after-delay
-     [:map
-      [:event-type [:= :after-delay]]
-      [:delay {:min 0} ::sm/safe-int]]]]
-   [:multi {:dispatch :event-action}
-    [:navigate
-     [:map
-      [:event-action [:= :navigate]]
-      [:destination {:optional true} [:maybe ::sm/uuid]]
-      [:preserve-scroll {:optional true} :boolean]
-      [:animation ::animation]]]
-    [:open-overlay
-     [:map
-      [:event-action [:= :open-overlay]]
-      [:overlay-position ::gpt/point]
-      [:overlay-pos-type [::sm/one-of overlay-positioning-type]]
-      [:destination {:optional true} [:maybe ::sm/uuid]]
-      [:close-click-outside {:optional true} :boolean]
-      [:background-overlay {:optional true} :boolean]
-      [:animation ::animation]
-      [:position-relative-to {:optional true} [:maybe ::sm/uuid]]]]
-    [:toggle-overlay
-     [:map
-      [:event-action [:= :toggle-overlay]]
-      [:overlay-position ::gpt/point]
-      [:overlay-pos-type [::sm/one-of overlay-positioning-type]]
-      [:destination {:optional true} [:maybe ::sm/uuid]]
-      [:close-click-outside {:optional true} :boolean]
-      [:background-overlay {:optional true} :boolean]
-      [:animation ::animation]
-      [:position-relative-to {:optional true} [:maybe ::sm/uuid]]]]
-    [:close-overlay
-     [:map
-      [:event-action [:= :toggle-overlay]]
-      [:destination {:optional true} [:maybe ::sm/uuid]]
-      [:animation ::animation]
-      [:position-relative-to {:optional true} [:maybe ::sm/uuid]]]]
-    [:prev-screen
-     [:map
-      [:event-action [:= :prev-screen]]]]
-    [:open-url
-     [:map
-      [:event-action [:= :open-url]]
-      [:url :string]]]]])
+  [:multi {:dispatch :event-action}
+   [:navigate
+    [:map
+     [:event-action [:= :navigate]]
+     [:event-type [::sm/one-of event-types]]
+     [:destination {:optional true} [:maybe ::sm/uuid]]
+     [:preserve-scroll {:optional true} :boolean]
+     [:animation ::animation]]]
+   [:open-overlay
+    [:map
+     [:event-action [:= :open-overlay]]
+     [:event-type [::sm/one-of event-types]]
+     [:overlay-position ::gpt/point]
+     [:overlay-pos-type [::sm/one-of overlay-positioning-type]]
+     [:destination {:optional true} [:maybe ::sm/uuid]]
+     [:close-click-outside {:optional true} :boolean]
+     [:background-overlay {:optional true} :boolean]
+     [:animation ::animation]
+     [:position-relative-to {:optional true} [:maybe ::sm/uuid]]]]
+   [:toggle-overlay
+    [:map
+     [:event-action [:= :toggle-overlay]]
+     [:event-type [::sm/one-of event-types]]
+     [:overlay-position ::gpt/point]
+     [:overlay-pos-type [::sm/one-of overlay-positioning-type]]
+     [:destination {:optional true} [:maybe ::sm/uuid]]
+     [:close-click-outside {:optional true} :boolean]
+     [:background-overlay {:optional true} :boolean]
+     [:animation ::animation]
+     [:position-relative-to {:optional true} [:maybe ::sm/uuid]]]]
+   [:close-overlay
+    [:map
+     [:event-action [:= :toggle-overlay]]
+     [:event-type [::sm/one-of event-types]]
+     [:destination {:optional true} [:maybe ::sm/uuid]]
+     [:animation ::animation]
+     [:position-relative-to {:optional true} [:maybe ::sm/uuid]]]]
+   [:prev-screen
+    [:map
+     [:event-action [:= :prev-screen]]
+     [:event-type [::sm/one-of event-types]]]]
+   [:open-url
+    [:map
+     [:event-action [:= :open-url]]
+     [:event-type [::sm/one-of event-types]]
+     [:url :string]]]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; HELPERS

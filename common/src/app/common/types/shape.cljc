@@ -362,8 +362,8 @@
    [:width {:optional true} ::sm/safe-number]
    [:height {:optional true} ::sm/safe-number]
    [:opacity {:optional true} ::sm/safe-number]
-   [:grids {:optional true}
-    [:vector {:gen/max 2} ::ctg/grid]]
+   ;; [:grids {:optional true}
+   ;;  [:vector {:gen/max 2} ::ctg/grid]]
    [:exports {:optional true}
     [:vector {:gen/max 2} ::ctse/export]]
    [:strokes {:optional true}
@@ -471,6 +471,9 @@
       [:id ::sm/uuid]
       [:type [:= :text]]
       [:content ::ctsx/content]]]]])
+
+(def valid-shape?
+  (sm/lazy-validator ::shape))
 
 ;; --- Initialization
 

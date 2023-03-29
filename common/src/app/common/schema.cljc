@@ -17,6 +17,7 @@
    [cuerdas.core :as str]
    [malli.core :as m]
    [malli.error :as me]
+   [malli.dev.pretty :as mdp]
    [malli.generator :as mg]
    [malli.registry :as mr]
    [malli.transform :as mt]
@@ -104,6 +105,11 @@
   [s]
   (-> s schema m/validator))
 
+(defmacro lazy-validator
+  [s]
+  `(let [vfn# (delay (validator ~s))]
+     (fn [v#] (@vfn# v#))))
+
 (defn explainer
   [s]
   (-> s schema m/explainer))
@@ -135,6 +141,10 @@
      :schema schema
      :value value
      :errors errors)))
+
+(defn pretty-explain
+  [s d]
+  (mdp/explain (schema s) d))
 
 (defmacro ignoring
   [expr]
@@ -168,65 +178,90 @@
   ([s] (lookup sr/default-registry s))
   ([registry s] (schema (mr/schema registry s))))
 
-;; (defn generator
-;;   [s]
-;;   (mg/generator s {:registry sr/default-registry}))
+(defn- get-assert-context
+  [env form sname]
+  (if-let [nsdata (:ns env)]
+    {:ns (str (:name nsdata))
+     :schema sname
+     :line (:line env)
+     :file (:file (:meta nsdata))}
+    {:ns   (str (ns-name *ns*))
+     :schema sname
+     :line (:line (meta form))}))
 
-;; (defn generate
-;;   [s]
-;;   (mg/generate (schema s)))
+
+(def ^:private validator-cache (atom {}))
+(def ^:private explainer-cache (atom {}))
+
+(defn resolve-validator
+  {:no-doc true}
+  [id]
+  (or (get @validator-cache id)
+      (-> (swap! validator-cache (fn [cache]
+                                   (assoc cache id (validator id))))
+          (get id))))
+
+(defn resolve-explainer
+  {:no-doc true}
+  [id]
+  (or (get @explainer-cache id)
+      (-> (swap! explainer-cache (fn [cache]
+                                   (assoc cache id (explainer id))))
+          (get id))))
 
 (defmacro assert-schema!
   [& [s value hint]]
   (let [sname   (pr-str s)
-        context (if-let [nsdata (:ns &env)]
-                  {:ns (str (:name nsdata))
-                   :schema sname
-                   :line (:line &env)
-                   :file (:file (:meta nsdata))}
-                  {:ns   (str (ns-name *ns*))
-                   :schema sname
-                   :line (:line (meta &form))})
+        context (get-assert-context &env &form sname)
         hint    (or hint (str "schema assert: " sname))]
+    `(let [v# ~value s# ~s]
+       (if (keyword? s#)
+         (let [validate-fn# (resolve-validator s#)]
+           (if (validate-fn# v#)
+             v#
+             (let [explain-fn# (resolve-explainer s#)
+                   explain     (explain-fn# v#)]
+               (throw (ex-info ~hint
+                               (into {:type :assertion
+                                      :code :data-validation
+                                      :hint ~hint
+                                      ::explain (explain s# v#)}
+                                     ~context))))))
+         (let [s# (schema ~s)]
+           (if (validate s# v#)
+             v#
+             (throw (ex-info ~hint
+                             (into {:type :assertion
+                                    :code :data-validation
+                                    :hint ~hint
+                                    ::explain (explain s# v#)}
+                                   ~context)))))))))
 
-    `(let [v# ~value
-           s# (schema ~s)
-           ;; s# (if (m/-ref-schema? s#) (m/deref s#) s#)
-           ]
-       (if (validate s# v#)
-         v#
-         (throw (ex-info ~hint
-                         (into {:type :assertion
-                                :code :data-validation
-                                :hint ~hint
-                                ::explain (explain s# v#)}
-                               ~context)))))))
-
-
-(defmacro assert-expr!
-  [& [expr hint]]
-  (let [hint (or hint (str "expr assert: " (pr-str expr)))]
-    `(when-not ~expr
-       (throw (rx-info ~hint
-                       {:type :assertion
-                        :code :expr-validation
-                        :hint ~hint})))))
+;; (defmacro assert-expr!
+;;   [& [expr hint]]
+;;   (let [hint (or hint (str "expr assert: " (pr-str expr)))]
+;;     `(when-not ~expr
+;;        (throw (rx-info ~hint
+;;                        {:type :assertion
+;;                         :code :expr-validation
+;;                         :hint ~hint})))))
 
 (defmacro assert!
   [& [expr :as params]]
-  (cond
-    (or (keyword? expr)
-        (vector? expr)
-        (symbol? expr))
+  (if (or (keyword? expr)
+          (vector? expr)
+          (symbol? expr))
     (when *assert*
-      `(assert-schema! ~@params))
-
-    (list? expr)
-    (when *assert*
-      `(assert-expr! ~@params))
-
-    :else
+      `(do :nothing))
     (throw (ex-info "invalid arguments" {}))))
+
+
+;; (assert-schema! ~@params))
+
+
+;; ;; (list? expr)
+;; ;; (when *assert*
+;; ;;   `(assert-expr! ~@params))
 
 (defmacro verify!
   "A variant of `assert!` macro that evaluates always, independently
