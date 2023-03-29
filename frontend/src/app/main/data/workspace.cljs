@@ -1603,16 +1603,15 @@
 
           ;; Change the indexes if the paste is done with an element selected
           (change-add-obj-index [paste-objects selected index change]
-            (let [set-index (fn [[result index] id]
+            (let [index (or index -1) ;; if it is null, we want the first (inc index) to be 0
+                  set-index (fn [[result index] id]
                               [(assoc result id index) (inc index)])
 
                   map-ids
                   (->> selected
                        (map #(get-in paste-objects [% :id]))
                        (reduce set-index [{} (inc index)])
-                       first)
-
-                  _ (prn "map-ids" map-ids)]
+                       first)]
               (if (and (= :add-obj (:type change))
                        (contains? map-ids (:old-id change)))
                 (assoc change :index (get map-ids (:old-id change)))
@@ -1628,57 +1627,49 @@
                    (nil? (get-in state [:workspace-libraries root-file-id])))))
 
           ;; Extract the components and their children, removing them from paste-objects and selected
-          ;; Then generate changes that instanciate each component
-          (paste-components [paste-objects selected page it file-id state delta]
+         (extract-components [paste-objects selected]
+                    (let [components (into {}
+                                           (filter (fn [[_key val]]
+                                                     (:main-instance? val))
+                                                   paste-objects))
+
+                          component-keys (keys components)
+                          component-vals (vals components)
+
+                          children-ids (->> component-keys
+                                            (map #(cph/get-children-ids paste-objects %))
+                                            (apply concat))
+                          componments-with-children-ids (concat component-keys children-ids)
+                          paste-objects (apply dissoc paste-objects componments-with-children-ids)
+                          selected (set/difference selected (set componments-with-children-ids))]
+                    [paste-objects selected component-vals]))
+
+
+          ;; Generate changes that instanciate or restore the component
+          (paste-component [component page it file-id state delta]
                           (let [libraries (wsh/get-libraries state)
-                                components (into {}
-                                                 (filter (fn [[_key val]]
-                                                           (:main-instance? val))
-                                                         paste-objects))
-
-                                component-keys (keys components)
-                                component-vals (vals components)
-
-                                children-ids (->> component-keys
-                                                  (map #(cph/get-children-ids paste-objects %))
-                                                  (apply concat))
-                                componments-with-children-ids (concat component-keys children-ids)
-                                paste-objects (apply dissoc paste-objects componments-with-children-ids)
-                                selected (set/difference selected (set componments-with-children-ids))
-                                change-data {:changes (pcb/empty-changes it (:id page))
-                                             :shapes []}
-
+                                component-id   (:component-id component)
+                                main-component (ctf/get-component libraries file-id component-id)
                                 instantiate-component
-                                (fn [change-data file-id component page libraries]
-                                  (let [moved-component (gsh/move component delta)
-                                        pos             (gpt/point (:x moved-component) (:y moved-component))]
-                                    (dwl/generate-instantiate-component (:changes change-data)
-                                                                        file-id
-                                                                        (:component-id component)
-                                                                        pos
-                                                                        page
-                                                                        libraries
-                                                                        (:id component))))
+                                #(let [moved-component (gsh/move component delta)
+                                       pos             (gpt/point (:x moved-component) (:y moved-component))
+                                       _ (prn "instantiate component" (gpt/point (:x component) (:y component)) pos)
+                                       empty-changes   (pcb/empty-changes it (:id page))
+                                       [shape changes]
+                                       (dwl/generate-instantiate-component empty-changes
+                                                                           file-id
+                                                                           (:component-id component)
+                                                                           pos
+                                                                           page
+                                                                           libraries
+                                                                           (:id component))]
+                                   {:changes changes :shape shape})
 
                                 restore-component
-                                (fn [change-data file-id component page delta]
-                                  (let [restore-changes (dwl/prepare-restore-component file-id (:component-id component) state it page delta)
-                                        _ (js/console.log (clj->js restore-changes))]
-                                    [(:shape restore-changes)
-                                     (pcb/concat-changes (:changes change-data) (:changes restore-changes))]))
-
-                                generate-change (fn [change-data component]
-                                                  (let [component-id    (:component-id component)
-                                                        _ (prn "generate-change" (:id component))
-                                                        main-component  (ctf/get-component libraries file-id component-id)
-                                                        [new-shape new-changes]
-                                                        (if (nil? main-component)
-                                                          (restore-component change-data file-id component page delta)
-                                                          (instantiate-component change-data file-id component page libraries))]
-                                                    {:changes new-changes :shapes (conj (:shapes change-data) (:id new-shape))}))
-
-                                change-data (reduce generate-change change-data component-vals)]
-                              [paste-objects selected change-data]))
+                                #(dwl/prepare-restore-component file-id (:component-id component) state it page delta (:id component))]
+                              (if (nil? main-component)
+                                (restore-component)
+                                (instantiate-component))))
 
 
           ;; Proceed with the standard shape paste process.
@@ -1704,41 +1695,55 @@
                         (cond-> (= (:type shape) :text)
                           (ctt/remove-external-typographies file-id))))
 
+                  paste-shape
+                  (fn [id all-objects]
+                    (-> (dws/prepare-duplicate-changes all-objects page [id] delta it nil)
+                        (pcb/amend-changes (partial process-rchange media-idx))))
+
                   objects (:objects page)
 
 
-                  ;; remove the components from paste-objects and selected, and generete their own changes
-                  [paste-objects-without-components selected-without-components component-changes] (paste-components paste-objects selected page it file-id state delta)
+                  ;; extracts the components from paste-objects and selected
+                  [paste-objects-without-components selected-without-components components] (extract-components paste-objects selected)
 
+                  ;; creates a structure with:
+                  ;;   - a map with key the id of the component, and value the changes for paste it
+                  ;;   - a map with the new shapes created by the pastes
+                  components-changes (reduce (fn [data component]
+                                               (let [paste-data (paste-component component page it file-id state delta)
+                                                     shape (:shape paste-data)
+                                                     data (assoc-in data [:changes (:id component)] (:changes paste-data))
+                                                     data (assoc-in data [:shapes (:id shape)] shape)]
+                                                 data))
+                                             {:changes {} :shapes {}}
+                                             components)
+                  components-shapes (:shapes components-changes)
+                  changes-map (:changes components-changes)
+
+                  ;; adds to the changes map entries with key the id of the shape, and value the changes for paste it
                   paste-objects-without-components (->> paste-objects-without-components (d/mapm process-shape))
+                  all-objects (-> objects
+                                  (merge paste-objects-without-components)
+                                  (merge components-shapes))
+                  changes-map (reduce (fn [map shape-id] (assoc map shape-id (paste-shape shape-id all-objects))) changes-map selected-without-components)
 
-                  all-objects (merge objects paste-objects-without-components)
 
-                  changes-without-components  (-> (dws/prepare-duplicate-changes all-objects page selected-without-components delta it nil)
-                                                  (pcb/amend-changes (partial process-rchange media-idx)))
+                  ;; Create a changes object with all the changes ordered by the original selected list
+                  empty-changes (pcb/empty-changes it)
+                  changes (reduce (fn [changes id] (pcb/concat-changes changes (get changes-map id))) empty-changes selected)
 
 
+                  ;;TODO Palba - doesn't work!!
                   ;; Adds a resize-parents operation so the groups are updated. We add all the new objects
-                  new-objects-ids (->> changes-without-components :redo-changes (filter #(= (:type %) :add-obj)) (mapv :id))
-                  changes-without-components (pcb/resize-parents changes-without-components new-objects-ids)
+                  new-objects-ids (->> changes :redo-changes (filter #(= (:type %) :add-obj)) (mapv :id))
+                  changes (-> (pcb/with-page changes page)
+                              (pcb/with-objects all-objects)
+                              (pcb/resize-parents new-objects-ids))
 
-                  ;;Concat the changes for components and the changes of non-components
-                  changes (pcb/concat-changes changes-without-components (:changes component-changes))
-
-
-
+                  ;; Set the index of the :add-obj changes
                   changes (pcb/amend-changes changes (partial change-add-obj-index paste-objects selected index))
 
-                  _ (js/console.log "changes1" (clj->js changes))
-
-                  ordered-redo (let [sorted-maps (sort-by :index (:redo-changes changes))
-                                     null-maps (filter #(nil? (:index %)) (:redo-changes changes))]
-                                 (concat sorted-maps null-maps))
-
-                  changes (assoc changes :redo-changes (vec ordered-redo))
-
-                  _ (js/console.log "changes2" (clj->js changes))
-
+                  _ (js/console.log "changes" (clj->js changes))
 
 
 
@@ -1748,7 +1753,7 @@
                                  (filter #(selected (:old-id %)))
                                  (map #(get-in % [:obj :id]))
                                  (into (d/ordered-set)))
-                  selected (reduce conj selected (:shapes component-changes))
+                  ;;selected (reduce conj selected (:shapes component-changes))
                   undo-id (js/Symbol)]
 
               (rx/of (dwu/start-undo-transaction undo-id)

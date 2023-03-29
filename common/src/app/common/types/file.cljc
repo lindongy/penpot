@@ -203,8 +203,7 @@
   "Recover a deleted component and all its shapes and put all this again in place."
   [file-data component-id page-id]
   (let [components-v2 (dm/get-in file-data [:options :components-v2])
-        update-page? (and components-v2 (not (nil? page-id)))
-        _ (prn "update-page?" update-page?)]
+        update-page? (and components-v2 (not (nil? page-id)))]
     (-> file-data
         (ctkl/update-component component-id #(dissoc % :objects))
         (ctkl/mark-component-undeleted component-id)

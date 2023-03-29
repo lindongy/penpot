@@ -436,9 +436,9 @@
    (let [library-data (wsh/get-file state library-id)
          component    (ctkl/get-deleted-component library-data component-id)
          page         (ctf/get-component-page library-data component)]
-     (prepare-restore-component library-id component-id state it page (gpt/point 0 0))))
+     (prepare-restore-component library-id component-id state it page (gpt/point 0 0) nil)))
 
-  ([library-id component-id state it page delta]
+  ([library-id component-id state it page delta old-id]
   (let [library-data (wsh/get-file state library-id)
         component    (ctkl/get-deleted-component library-data component-id)
 
@@ -447,9 +447,11 @@
         changes      (-> (pcb/empty-changes it)
                          (pcb/with-library-data library-data)
                          (pcb/with-page page))
+        changes      (cond-> (pcb/add-object changes (first shapes) {:ignore-touched true})
+                       (some? old-id) (pcb/amend-last-change #(assoc % :old-id old-id)))
         changes      (reduce #(pcb/add-object %1 %2 {:ignore-touched true})
                              changes
-                             shapes)]
+                             (rest shapes))]
     {:changes (pcb/restore-component changes component-id (:id page))
      :shape (first shapes)}))
   )
@@ -463,8 +465,7 @@
   (ptk/reify ::restore-component
     ptk/WatchEvent
     (watch [it state _]
-      (let [_ (prn "restoring")
-            changes (:changes (prepare-restore-component library-id component-id state it))]
+      (let [changes (:changes (prepare-restore-component library-id component-id state it))]
         (rx/of (dch/commit-changes changes))))))
 
 

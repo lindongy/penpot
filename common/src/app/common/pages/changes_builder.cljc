@@ -213,7 +213,7 @@
   ([changes obj]
    (add-object changes obj nil))
 
-  ([changes obj {:keys [index ignore-touched old-id] :or {index ::undefined ignore-touched false old-id nil}}]
+  ([changes obj {:keys [index ignore-touched] :or {index ::undefined ignore-touched false}}]
    (assert-page-id changes)
    (let [obj (cond-> obj
                (not= index ::undefined)
@@ -221,7 +221,6 @@
          add-change
          {:type           :add-obj
           :id             (:id obj)
-          :old-id         old-id
           :page-id        (::page-id (meta changes))
           :parent-id      (:parent-id obj)
           :frame-id       (:frame-id obj)
@@ -660,7 +659,6 @@
   ([changes id]
    (restore-component changes id nil))
   ([changes id page-id]
-   (prn "restore-component page-id" page-id)
    (assert-library changes)
    (-> changes
        (update :redo-changes conj {:type :restore-component
