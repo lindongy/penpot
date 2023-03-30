@@ -1687,6 +1687,7 @@
                         (assoc :frame-id frame-id)
                         (assoc :parent-id parent-id)
 
+                        ;; palba TODO review foreign-instance and component extraction
                         ;; if foreign instance, detach the shape
                         (cond-> (foreign-instance? shape paste-objects state)
                           (dissoc :component-id :component-file :component-root?
@@ -1696,15 +1697,14 @@
                           (ctt/remove-external-typographies file-id))))
 
                   paste-shape
-                  (fn [id all-objects]
-                    (-> (dws/prepare-duplicate-changes all-objects page [id] delta it nil)
-                        (pcb/amend-changes (partial process-rchange media-idx))))
-
-                  objects (:objects page)
-
+                  (fn [id objects]
+                    (-> (dws/prepare-duplicate-changes objects page [id] delta it nil)
+                        (pcb/amend-changes (partial process-rchange media-idx)))) ;; palba TODO do this for components too?
 
                   ;; extracts the components from paste-objects and selected
-                  [paste-objects-without-components selected-without-components components] (extract-components paste-objects selected)
+                  [paste-objs-no-comp selected-no-comp components] (extract-components paste-objects selected)
+
+                  ;;;;;;;;;;;;;;;;;;; PROCESS COMPONENTS
 
                   ;; creates a structure with:
                   ;;   - a map with key the id of the component, and value the changes for paste it
@@ -1720,13 +1720,20 @@
                   components-shapes (:shapes components-changes)
                   changes-map (:changes components-changes)
 
-                  ;; adds to the changes map entries with key the id of the shape, and value the changes for paste it
-                  paste-objects-without-components (->> paste-objects-without-components (d/mapm process-shape))
-                  all-objects (-> objects
-                                  (merge paste-objects-without-components)
-                                  (merge components-shapes))
-                  changes-map (reduce (fn [map shape-id] (assoc map shape-id (paste-shape shape-id all-objects))) changes-map selected-without-components)
 
+                  ;;;;;;;;;;;;;;;;;;; PROCESS NO COMPONENTS
+
+                  ;; add frame-id and parent-id, and remove external references on the pasted shapes
+                  paste-objs-no-comp (->> paste-objs-no-comp (d/mapm process-shape))
+
+                  ;; adds to the changes map entries with key the id of the shape, and value the changes for paste it
+                  all-objects (-> (:objects page)
+                                  (merge paste-objs-no-comp)
+                                  (merge components-shapes))
+                  changes-map (reduce (fn [map shape-id] (assoc map shape-id (paste-shape shape-id all-objects))) changes-map selected-no-comp)
+
+
+                  ;;;;;;;;;;;;;;;;;;; JOIN COMPONENTS AND NO-COMPONENTS
 
                   ;; Create a changes object with all the changes ordered by the original selected list
                   empty-changes (pcb/empty-changes it)
@@ -1736,6 +1743,8 @@
                   ;;TODO Palba - doesn't work!!
                   ;; Adds a resize-parents operation so the groups are updated. We add all the new objects
                   new-objects-ids (->> changes :redo-changes (filter #(= (:type %) :add-obj)) (mapv :id))
+                  _ (prn "new-objects-ids" new-objects-ids)
+                  _ (js/console.log "all-objects" (clj->js all-objects))
                   changes (-> (pcb/with-page changes page)
                               (pcb/with-objects all-objects)
                               (pcb/resize-parents new-objects-ids))
@@ -1745,15 +1754,12 @@
 
                   _ (js/console.log "changes" (clj->js changes))
 
-
-
                   selected  (->> changes
                                  :redo-changes
                                  (filter #(= (:type %) :add-obj))
                                  (filter #(selected (:old-id %)))
                                  (map #(get-in % [:obj :id]))
                                  (into (d/ordered-set)))
-                  ;;selected (reduce conj selected (:shapes component-changes))
                   undo-id (js/Symbol)]
 
               (rx/of (dwu/start-undo-transaction undo-id)
