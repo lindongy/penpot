@@ -45,7 +45,8 @@
    [app.util.time :as dt]
    [beicon.core :as rx]
    [cljs.spec.alpha :as s]
-   [potok.core :as ptk]))
+   [potok.core :as ptk]
+   [app.main.data.workspace.path.changes :as changes]))
 
 ;; Change this to :info :debug or :trace to debug this module, or :warn to reset to default
 (log/set-level! :warn)
@@ -436,17 +437,17 @@
    (let [library-data (wsh/get-file state library-id)
          component    (ctkl/get-deleted-component library-data component-id)
          page         (ctf/get-component-page library-data component)]
-     (prepare-restore-component library-id component-id state it page (gpt/point 0 0) nil)))
+     (prepare-restore-component library-id component-id state it page (gpt/point 0 0) nil nil)))
 
-  ([library-id component-id state it page delta old-id]
+  ([library-id component-id state it page delta old-id changes]
   (let [library-data (wsh/get-file state library-id)
         component    (ctkl/get-deleted-component library-data component-id)
 
         shapes       (cph/get-children-with-self (:objects component) (:main-instance-id component))
         shapes       (map #(gsh/move % delta) shapes)
-        changes      (-> (pcb/empty-changes it)
-                         (pcb/with-library-data library-data)
-                         (pcb/with-page page))
+        changes      (-> (or changes (pcb/empty-changes it))
+                         (pcb/with-page page)
+                         (pcb/with-library-data library-data))
         changes      (cond-> (pcb/add-object changes (first shapes) {:ignore-touched true})
                        (some? old-id) (pcb/amend-last-change #(assoc % :old-id old-id)))
         changes      (reduce #(pcb/add-object %1 %2 {:ignore-touched true})

@@ -332,40 +332,45 @@
 (defn prepare-duplicate-changes
   "Prepare objects to duplicate: generate new id, give them unique names,
   move to the desired position, and recalculate parents and frames as needed."
-  [all-objects page ids delta it libraries]
-  (let [shapes         (map (d/getf all-objects) ids)
-        unames         (volatile! (cp/retrieve-used-names (:objects page)))
-        update-unames! (fn [new-name] (vswap! unames conj new-name))
-        all-ids        (reduce #(into %1 (cons %2 (cph/get-children-ids all-objects %2))) (d/ordered-set) ids)
-        ids-map        (into {} (map #(vector % (uuid/next))) all-ids)
+  ([all-objects page ids delta it libraries]
+   (let [init-changes
+         (-> (pcb/empty-changes it)
+             (pcb/with-page page)
+             (pcb/with-objects all-objects))]
+  (prepare-duplicate-changes all-objects page ids delta it libraries init-changes)))
 
-        init-changes
-        (-> (pcb/empty-changes it)
-            (pcb/with-page page)
-            (pcb/with-objects all-objects))
+  ([all-objects page ids delta it libraries init-changes]
+   (let [shapes         (map (d/getf all-objects) ids)
+         unames         (volatile! (cp/retrieve-used-names (:objects page)))
+         update-unames! (fn [new-name] (vswap! unames conj new-name))
+         all-ids        (reduce #(into %1 (cons %2 (cph/get-children-ids all-objects %2))) (d/ordered-set) ids)
+         ids-map        (into {} (map #(vector % (uuid/next))) all-ids)
 
-        changes
-        (->> shapes
-             (reduce #(prepare-duplicate-shape-change %1
-                                                      all-objects
-                                                      page
-                                                      unames
-                                                      update-unames!
-                                                      ids-map
-                                                      %2
-                                                      delta
-                                                      libraries)
-                     init-changes))]
 
-    (-> changes
-        (prepare-duplicate-flows shapes page ids-map)
-        (prepare-duplicate-guides shapes page ids-map delta))))
+
+         changes
+         (->> shapes
+              (reduce #(prepare-duplicate-shape-change %1
+                                                       all-objects
+                                                       page
+                                                       unames
+                                                       update-unames!
+                                                       ids-map
+                                                       %2
+                                                       delta
+                                                       libraries)
+                      init-changes))]
+
+     (-> changes
+         (prepare-duplicate-flows shapes page ids-map)
+         (prepare-duplicate-guides shapes page ids-map delta)))))
 
 (defn- prepare-duplicate-shape-change
   ([changes objects page unames update-unames! ids-map obj delta libraries]
    (prepare-duplicate-shape-change changes objects page unames update-unames! ids-map obj delta libraries (:frame-id obj) (:parent-id obj)))
 
   ([changes objects page unames update-unames! ids-map obj delta libraries frame-id parent-id]
+   (js/console.log "obj" (clj->js obj))
    (cond
      (nil? obj)
      changes
@@ -379,7 +384,7 @@
                                                 page
                                                 libraries)]
        changes)
-     
+
      :else
      (let [frame?      (cph/frame-shape? obj)
            new-id      (ids-map (:id obj))
@@ -417,7 +422,8 @@
 
 (defn- prepare-duplicate-flows
   [changes shapes page ids-map]
-  (let [flows            (-> page :options :flows)
+  (let [_ (prn "prepare-duplicate-flows")
+        flows            (-> page :options :flows)
         unames           (volatile! (into #{} (map :name flows)))
         frames-with-flow (->> shapes
                               (filter #(= (:type %) :frame))
