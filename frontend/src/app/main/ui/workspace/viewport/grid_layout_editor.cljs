@@ -136,6 +136,76 @@
             :href (dm/str "#icon-plus")
             :fill "white"}]]))
 
+(defn use-drag
+  [{:keys [on-drag-start on-drag-end on-drag-delta on-drag-position]}]
+  (let [
+        dragging-ref    (mf/use-ref false)
+        start-pos-ref   (mf/use-ref nil)
+        current-pos-ref (mf/use-ref nil)
+
+        handle-pointer-down
+        (mf/use-callback
+         (mf/deps on-drag-start)
+         (fn [event]
+           (let [position (dom/get-client-position event)]
+             (dom/capture-pointer event)
+             (mf/set-ref-val! dragging-ref true)
+             (mf/set-ref-val! start-pos-ref position)
+             (mf/set-ref-val! current-pos-ref position)
+             (when on-drag-start (on-drag-start position)))))
+
+        handle-lost-pointer-capture
+        (mf/use-callback
+         (mf/deps on-drag-end)
+         (fn [event]
+           (let [position (mf/ref-val current-pos-ref)]
+             (dom/release-pointer event)
+             (mf/set-ref-val! dragging-ref false)
+             (mf/set-ref-val! start-pos-ref nil))))
+
+        handle-pointer-move
+        (mf/use-callback
+         (fn [event]
+           (when (mf/ref-val dragging-ref)
+             (let [start (mf/ref-val start-pos-ref)
+                   pos   (dom/get-client-position event)]
+               (mf/set-ref-val! current-pos-ref pos)
+               (when on-drag-delta (on-drag-delta (gpt/to-vec start pos)))
+               (when on-drag-position (on-drag-position pos))))))]
+
+    {:handle-pointer-down handle-pointer-down
+     :handle-lost-pointer-capture handle-lost-pointer-capture
+     :handle-pointer-move handle-pointer-move}))
+
+(mf/defc resize-cell-handler
+  {::mf/wrap-props false}
+  [props]
+  (let [x (unchecked-get props "x")
+        y (unchecked-get props "y")
+        width (unchecked-get props "width")
+        height (unchecked-get props "height")
+        direction (unchecked-get props "direction")
+        cursor (if (= direction :row) (cur/scale-ns 0) (cur/scale-ew 0))
+
+        handle-drag-delta
+        (mf/use-callback
+         (fn [delta]
+           (prn ">>>" delta)))
+
+        {:keys [handle-pointer-down handle-lost-pointer-capture handle-pointer-move]}
+        (use-drag {:on-drag-delta handle-drag-delta})]
+
+    [:rect
+     {:x x
+      :y y
+      :height height
+      :width width
+      :style {:fill "transparent" :stroke-width 0 :cursor cursor}
+
+      :on-pointer-down handle-pointer-down
+      :on-lost-pointer-capture handle-lost-pointer-capture
+      :on-pointer-move handle-pointer-move}]))
+
 (mf/defc grid-cell
   {::mf/wrap-props false}
   [props]
@@ -191,18 +261,17 @@
      (when selected?
        (let [handlers
              ;; Handlers positions, size and cursor
-             [[(:x start-p) (+ (:y start-p) (/ -10 zoom)) cell-width (/ 20 zoom) (cur/scale-ns 0)]
-              [(+ (:x start-p) cell-width (/ -10 zoom)) (:y start-p) (/ 20 zoom) cell-height (cur/scale-ew 0)]
-              [(:x start-p) (+ (:y start-p) cell-height (/ -10 zoom)) cell-width (/ 20 zoom) (cur/scale-ns 0)]
-              [(+ (:x start-p) (/ -10 zoom)) (:y start-p) (/ 20 zoom) cell-height (cur/scale-ew 0)]]]
+             [[(:x start-p) (+ (:y start-p) (/ -10 zoom)) cell-width (/ 20 zoom) :row]
+              [(+ (:x start-p) cell-width (/ -10 zoom)) (:y start-p) (/ 20 zoom) cell-height :column]
+              [(:x start-p) (+ (:y start-p) cell-height (/ -10 zoom)) cell-width (/ 20 zoom) :row]
+              [(+ (:x start-p) (/ -10 zoom)) (:y start-p) (/ 20 zoom) cell-height :column]]]
          [:*
-          (for [[x y width height cursor] handlers]
-            [:rect
-             {:x x
-              :y y
-              :height height
-              :width width
-              :style {:fill "transparent" :stroke-width 0 :cursor cursor}}])]))]))
+          (for [[x y width height dir] handlers]
+            [:& resize-cell-handler {:x x
+                                     :y y
+                                     :width width
+                                     :height height
+                                     :direction dir}])]))]))
 
 (mf/defc resize-handler
   {::mf/wrap-props false}
