@@ -210,8 +210,9 @@
   {::mf/wrap-props false}
   [props]
   (let [shape (unchecked-get props "shape")
-        {:keys [row-tracks column-tracks]} (unchecked-get props "layout-data")
-        bounds   (unchecked-get props "bounds")
+        
+        {:keys [origin row-tracks column-tracks layout-bounds]} (unchecked-get props "layout-data")
+        
         zoom    (unchecked-get props "zoom")
 
         hover?    (unchecked-get props "hover?")
@@ -223,18 +224,17 @@
         column-track (nth column-tracks (dec column) nil)
         row-track (nth row-tracks (dec row) nil)
 
+        hv     #(gpo/start-hv layout-bounds %)
+        vv     #(gpo/start-vv layout-bounds %)
 
-        origin (gpo/origin bounds)
-        hv     #(gpo/start-hv bounds %)
-        vv     #(gpo/start-vv bounds %)
-
-        start-p (-> origin
-                    (gpt/add (hv (:distance column-track)))
-                    (gpt/add (vv (:distance row-track))))
+        start-p (gpt/add origin
+                         (gpt/add
+                          (gpt/to-vec origin (:start-p column-track))
+                          (gpt/to-vec origin (:start-p row-track))))
 
         end-p (-> start-p
-                  (gpt/add (hv (:value column-track)))
-                  (gpt/add (vv (:value row-track))))
+                  (gpt/add (hv (:size column-track)))
+                  (gpt/add (vv (:size row-track))))
 
         cell-width  (- (:x end-p) (:x start-p))
         cell-height (- (:y end-p) (:y start-p))]
@@ -402,7 +402,7 @@
 
 
      (for [[idx column-data] (d/enumerate column-tracks)]
-       (let [start-p (-> origin (gpt/add (hv (:distance column-data))))
+       (let [start-p (:start-p column-data)
              marker-p (-> start-p (gpt/subtract (vv (/ 20 zoom))))]
          [:*
           [:& track-marker {:center marker-p
@@ -415,7 +415,7 @@
                               :bounds bounds}]]))
 
      (for [[idx row-data] (d/enumerate row-tracks)]
-       (let [start-p (-> origin (gpt/add (vv (:distance row-data))))
+       (let [start-p (:start-p row-data)
              marker-p (-> start-p (gpt/subtract (hv (/ 20 zoom))))]
          [:*
           [:g {:transform (dm/fmt "rotate(-90 % %)" (:x marker-p) (:y marker-p))}
@@ -429,11 +429,11 @@
                               :bounds bounds}]]))
 
      (for [[_ {:keys [column row]}] (:layout-grid-cells shape)]
-       [:& grid-cell {:shape shape
-                      :layout-data layout-data
-                      :row row
-                      :column column
-                      :bounds bounds
-                      :zoom zoom
-                      :hover? (contains? hover-cells [row column])
-                      :selected? (= selected-cells [row column])}])]))
+       (let [cell-data (gsg/get-cell-data layout-data bounds [(:bounds shape) shape])]
+         [:& grid-cell {:shape shape
+                        :layout-data layout-data
+                        :row row
+                        :column column
+                        :zoom zoom
+                        :hover? (contains? hover-cells [row column])
+                        :selected? (= selected-cells [row column])}]))]))

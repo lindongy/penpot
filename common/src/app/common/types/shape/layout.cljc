@@ -267,6 +267,13 @@
         layout-gap-col (or (-> layout-gap :column-gap) 0)]
     [layout-gap-row layout-gap-col]))
 
+(defn paddings
+  [{:keys [layout-padding-type layout-padding]}]
+  (let [{pad-top :p1 pad-right :p2 pad-bottom :p3 pad-left :p4} layout-padding]
+    (if (= :simple layout-padding-type)
+      [pad-top pad-right pad-top pad-right]
+      [pad-top pad-right pad-bottom pad-left])))
+
 (defn child-min-width
   [child]
   (if (and (fill-width? child)
