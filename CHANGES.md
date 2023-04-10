@@ -5,6 +5,7 @@
 ### :boom: Breaking changes & Deprecations
 
 ### :sparkles: New features
+- Create typography style from a selected text layer [Taiga #3041](https://tree.taiga.io/project/penpot/us/3041)
 
 ### :bug: Bugs fixed
 
