@@ -1737,33 +1737,26 @@
                                 (seq (:colors selected-assets)))
         workspace-read-only?  (mf/use-ctx ctx/workspace-read-only?)
 
-        shapes (mf/deref refs/selected-objects)
+        text-shapes (->>
+                     (mf/deref refs/selected-objects)
+                     (filter #(= (:type %) :text)))
+
         state-map (mf/deref refs/workspace-editor-state)
-        _ (println "shapes" shapes)
+        _ (println "text-shapes" text-shapes)
 
         add-typography
         (mf/use-fn
-          (mf/deps file-id shapes)
+          (mf/deps file-id text-shapes)
           (fn [_]
-            (let [shape (first shapes)
-                  editor-state (get state-map (:id shape))
+            (let [text-shape (first text-shapes)
+                  editor-state (get state-map (:id text-shape))
 
-                  text-values (d/merge
-                                (select-keys shape [:grow-type])
-                                (select-keys shape fill-attrs)
-                                (dwt/current-root-values
-                                  {:shape shape
-                                   :attrs dwt/root-attrs})
-                                (dwt/current-paragraph-values
-                                  {:editor-state editor-state
-                                   :shape shape
-                                   :attrs dwt/paragraph-attrs})
-                                (dwt/current-text-values
-                                  {:editor-state editor-state
-                                   :shape shape
-                                   :attrs dwt/text-attrs}))
+                  text-values (dwt/current-text-values
+                                {:editor-state editor-state
+                                 :shape text-shape
+                                 :attrs dwt/text-attrs})
 
-                  multiple? (or (> 1 (count shapes))
+                  multiple? (or (> 1 (count text-shape))
                               (->> text-values vals (d/seek #(= % :multiple))))
                   set-values (-> (d/without-nils text-values)
                                  (select-keys
