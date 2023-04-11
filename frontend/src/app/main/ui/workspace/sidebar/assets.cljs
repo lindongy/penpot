@@ -14,7 +14,6 @@
    [app.common.text :as txt]
    [app.common.types.components-list :as ctkl]
    [app.common.types.file :as ctf]
-   [app.common.uuid :as uuid]
    [app.config :as cf]
    [app.main.data.events :as ev]
    [app.main.data.modal :as modal]
@@ -36,7 +35,6 @@
    [app.main.ui.context :as ctx]
    [app.main.ui.hooks :as h]
    [app.main.ui.icons :as i]
-   [app.main.ui.workspace.sidebar.options.menus.text :refer [generate-typography-name]]
    [app.main.ui.workspace.sidebar.options.menus.typography :refer [typography-entry]]
    [app.util.color :as uc]
    [app.util.dom :as dom]
@@ -1733,8 +1731,8 @@
         selected-typographies-full (filter #(contains? selected-typographies (:id %)) typographies)
         multi-typographies?   (> (count selected-typographies) 1)
         multi-assets?         (or (seq (:components selected-assets))
-                                (seq (:graphics selected-assets))
-                                (seq (:colors selected-assets)))
+                                  (seq (:graphics selected-assets))
+                                  (seq (:colors selected-assets)))
         workspace-read-only?  (mf/use-ctx ctx/workspace-read-only?)
 
         file-id (mf/use-ctx ctx/current-file-id)
@@ -1753,6 +1751,7 @@
 
         multiple? (or (> 1 (count text-shape))
                     (->> text-values vals (d/seek #(= % :multiple))))
+
         values (-> (d/without-nils text-values)
                    (select-keys
                      (d/concat-vec dwt/text-font-attrs
@@ -1777,106 +1776,106 @@
             (st/emit! (dwl/add-typography typography)
               (ptk/event ::ev/event {::ev/name "add-asset-to-library"
                                      :asset-type "typography"}))))
-
+        
         handle-change
         (mf/use-fn
-          (mf/deps file-id)
-          (fn [typography changes]
-            (st/emit! (dwl/update-typography (merge typography changes) file-id))))
+         (mf/deps file-id)
+         (fn [typography changes]
+           (st/emit! (dwl/update-typography (merge typography changes) file-id))))
 
         apply-typography
         (fn [typography _event]
           (let [ids (wsh/lookup-selected @st/state)
                 attrs (merge
-                        {:typography-ref-file file-id
-                         :typography-ref-id (:id typography)}
-                        (dissoc typography :id :name))]
+                       {:typography-ref-file file-id
+                        :typography-ref-id (:id typography)}
+                       (dissoc typography :id :name))]
             (run! #(st/emit!
-                     (dwt/update-text-attrs
-                       {:id %
-                        :editor (get @refs/workspace-editor-state %)
-                        :attrs attrs}))
-              ids)))
+                    (dwt/update-text-attrs
+                     {:id %
+                      :editor (get @refs/workspace-editor-state %)
+                      :attrs attrs}))
+                  ids)))
 
         create-group
         (mf/use-fn
-          (mf/deps typographies selected-typographies on-clear-selection file-id)
-          (fn [group-name]
-            (on-clear-selection)
-            (let [undo-id (js/Symbol)]
-              (st/emit! (dwu/start-undo-transaction undo-id))
-              (apply st/emit!
-                (->> typographies
-                     (filter #(if multi-typographies?
-                                (contains? selected-typographies (:id %))
-                                (= (:id @state) (:id %))))
-                     (map #(dwl/update-typography
-                             (assoc % :name
-                               (add-group % group-name))
-                             file-id))))
-              (st/emit! (dwu/commit-undo-transaction undo-id)))))
+         (mf/deps typographies selected-typographies on-clear-selection file-id)
+         (fn [group-name]
+           (on-clear-selection)
+           (let [undo-id (js/Symbol)]
+             (st/emit! (dwu/start-undo-transaction undo-id))
+             (apply st/emit!
+                    (->> typographies
+                         (filter #(if multi-typographies?
+                                    (contains? selected-typographies (:id %))
+                                    (= (:id @state) (:id %))))
+                         (map #(dwl/update-typography
+                                (assoc % :name
+                                       (add-group % group-name))
+                                file-id))))
+             (st/emit! (dwu/commit-undo-transaction undo-id)))))
 
         rename-group
         (mf/use-fn
-          (mf/deps typographies)
-          (fn [path last-path]
-            (on-clear-selection)
-            (let [undo-id (js/Symbol)]
-              (st/emit! (dwu/start-undo-transaction undo-id))
-              (apply st/emit!
-                (->> typographies
-                     (filter #(str/starts-with? (:path %) path))
-                     (map #(dwl/update-typography
-                             (assoc % :name
-                               (rename-group % path last-path))
-                             file-id))))
-              (st/emit! (dwu/commit-undo-transaction undo-id)))))
+         (mf/deps typographies)
+         (fn [path last-path]
+           (on-clear-selection)
+           (let [undo-id (js/Symbol)]
+             (st/emit! (dwu/start-undo-transaction undo-id))
+             (apply st/emit!
+                    (->> typographies
+                         (filter #(str/starts-with? (:path %) path))
+                         (map #(dwl/update-typography
+                                (assoc % :name
+                                       (rename-group % path last-path))
+                                file-id))))
+             (st/emit! (dwu/commit-undo-transaction undo-id)))))
 
         on-group
         (mf/use-fn
-          (mf/deps typographies selected-typographies)
-          (fn [event]
-            (dom/stop-propagation event)
-            (modal/show! :name-group-dialog {:accept create-group})))
+         (mf/deps typographies selected-typographies)
+         (fn [event]
+           (dom/stop-propagation event)
+           (modal/show! :name-group-dialog {:accept create-group})))
 
         on-rename-group
         (mf/use-fn
-          (mf/deps typographies)
-          (fn [event path last-path]
-            (dom/stop-propagation event)
-            (modal/show! :name-group-dialog {:path path
-                                             :last-path last-path
-                                             :accept rename-group})))
+         (mf/deps typographies)
+         (fn [event path last-path]
+           (dom/stop-propagation event)
+           (modal/show! :name-group-dialog {:path path
+                                            :last-path last-path
+                                            :accept rename-group})))
         on-ungroup
         (mf/use-fn
-          (mf/deps typographies)
-          (fn [path]
-            (on-clear-selection)
-            (let [undo-id (js/Symbol)]
-              (st/emit! (dwu/start-undo-transaction undo-id))
-              (apply st/emit!
-                (->> typographies
-                     (filter #(str/starts-with? (:path %) path))
-                     (map #(dwl/rename-typography
-                             file-id
-                             (:id %)
-                             (ungroup % path)))))
-              (st/emit! (dwu/commit-undo-transaction undo-id)))))
+         (mf/deps typographies)
+         (fn [path]
+           (on-clear-selection)
+           (let [undo-id (js/Symbol)]
+             (st/emit! (dwu/start-undo-transaction undo-id))
+             (apply st/emit!
+                    (->> typographies
+                         (filter #(str/starts-with? (:path %) path))
+                         (map #(dwl/rename-typography
+                                file-id
+                                (:id %)
+                                (ungroup % path)))))
+             (st/emit! (dwu/commit-undo-transaction undo-id)))))
 
         on-context-menu
         (mf/use-fn
-          (mf/deps selected-typographies on-clear-selection workspace-read-only?)
-          (fn [id event]
-            (when (and local? (not workspace-read-only?))
-              (when-not (contains? selected-typographies id)
-                (on-clear-selection))
-              (swap! state assoc :id id)
-              (swap! menu-state #(open-auto-pos-menu % event)))))
+         (mf/deps selected-typographies on-clear-selection workspace-read-only?)
+         (fn [id event]
+           (when (and local? (not workspace-read-only?))
+             (when-not (contains? selected-typographies id)
+               (on-clear-selection))
+             (swap! state assoc :id id)
+             (swap! menu-state #(open-auto-pos-menu % event)))))
 
         on-close-menu
         (mf/use-fn
-          (fn []
-            (swap! menu-state close-auto-pos-menu)))
+         (fn []
+           (swap! menu-state close-auto-pos-menu)))
 
         handle-rename-typography-clicked
         (fn []
@@ -1888,18 +1887,18 @@
 
         handle-delete-typography
         (mf/use-fn
-          (mf/deps @state multi-typographies? multi-assets?)
-          (fn []
-            (let [undo-id (js/Symbol)]
-              (if (or multi-typographies? multi-assets?)
-                (on-assets-delete)
-                (st/emit! (dwu/start-undo-transaction undo-id)
-                  (dwl/delete-typography (:id @state))
-                  (dwl/sync-file file-id file-id :typographies (:id @state))
-                  (dwu/commit-undo-transaction undo-id))))))
+         (mf/deps @state multi-typographies? multi-assets?)
+         (fn []
+           (let [undo-id (js/Symbol)]
+             (if (or multi-typographies? multi-assets?)
+               (on-assets-delete)
+               (st/emit! (dwu/start-undo-transaction undo-id)
+                         (dwl/delete-typography (:id @state))
+                         (dwl/sync-file file-id file-id :typographies (:id @state))
+                         (dwu/commit-undo-transaction undo-id))))))
 
         editing-id (or (:rename-typography local-data)
-                     (:edit-typography local-data))]
+                       (:edit-typography local-data))]
 
     (mf/use-effect
      (mf/deps local-data)
