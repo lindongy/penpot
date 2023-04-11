@@ -14,6 +14,7 @@
    [app.common.text :as txt]
    [app.common.types.components-list :as ctkl]
    [app.common.types.file :as ctf]
+   [app.common.uuid :as uuid]
    [app.config :as cf]
    [app.main.data.events :as ev]
    [app.main.data.modal :as modal]
@@ -1736,7 +1737,6 @@
                                   (seq (:colors selected-assets)))
         workspace-read-only?  (mf/use-ctx ctx/workspace-read-only?)
 
-        file-id (mf/use-ctx ctx/current-file-id)
         text-shapes (->>
                      (mf/deref refs/selected-objects)
                      (filter #(= (:type %) :text)))
