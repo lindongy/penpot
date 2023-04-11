@@ -35,6 +35,7 @@
    [app.main.ui.context :as ctx]
    [app.main.ui.hooks :as h]
    [app.main.ui.icons :as i]
+   [app.main.ui.workspace.sidebar.options.menus.text :refer [generate-typography-name]]
    [app.main.ui.workspace.sidebar.options.menus.typography :refer [typography-entry]]
    [app.util.color :as uc]
    [app.util.dom :as dom]
