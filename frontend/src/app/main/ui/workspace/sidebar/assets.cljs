@@ -14,6 +14,7 @@
    [app.common.text :as txt]
    [app.common.types.components-list :as ctkl]
    [app.common.types.file :as ctf]
+   [app.common.uuid :as uuid]
    [app.config :as cf]
    [app.main.data.events :as ev]
    [app.main.data.modal :as modal]
@@ -35,7 +36,6 @@
    [app.main.ui.context :as ctx]
    [app.main.ui.hooks :as h]
    [app.main.ui.icons :as i]
-   [app.main.ui.workspace.sidebar.options.menus.fill :refer [fill-attrs]]
    [app.main.ui.workspace.sidebar.options.menus.text :refer [generate-typography-name]]
    [app.main.ui.workspace.sidebar.options.menus.typography :refer [typography-entry]]
    [app.util.color :as uc]
@@ -1737,39 +1737,46 @@
                                 (seq (:colors selected-assets)))
         workspace-read-only?  (mf/use-ctx ctx/workspace-read-only?)
 
+        file-id (mf/use-ctx ctx/current-file-id)
         text-shapes (->>
                      (mf/deref refs/selected-objects)
                      (filter #(= (:type %) :text)))
 
         state-map (mf/deref refs/workspace-editor-state)
-        _ (println "text-shapes" text-shapes)
+        text-shape (first text-shapes)
+        editor-state (get state-map (:id text-shape))
+
+        text-values (dwt/current-text-values
+                      {:editor-state editor-state
+                       :shape text-shape
+                       :attrs dwt/text-attrs})
+
+        multiple? (or (> 1 (count text-shape))
+                    (->> text-values vals (d/seek #(= % :multiple))))
+        values (-> (d/without-nils text-values)
+                   (select-keys
+                     (d/concat-vec dwt/text-font-attrs
+                       dwt/text-spacing-attrs
+                       dwt/text-transform-attrs)))
+
+        typography-id (uuid/next)
+        typography (-> (if multiple?
+                         txt/default-typography
+                         (merge txt/default-typography values))
+                       (generate-typography-name)
+                       (assoc :id typography-id))
 
         add-typography
         (mf/use-fn
-          (mf/deps file-id text-shapes)
+          (mf/deps file-id typography)
           (fn [_]
-            (let [text-shape (first text-shapes)
-                  editor-state (get state-map (:id text-shape))
+            (when (not multiple?)
+              (st/emit! (dwt/update-attrs (:id text-shape) {:typography-ref-id typography-id
+                                                            :typography-ref-file file-id})))
 
-                  text-values (dwt/current-text-values
-                                {:editor-state editor-state
-                                 :shape text-shape
-                                 :attrs dwt/text-attrs})
-
-                  multiple? (or (> 1 (count text-shape))
-                              (->> text-values vals (d/seek #(= % :multiple))))
-                  set-values (-> (d/without-nils text-values)
-                                 (select-keys
-                                   (d/concat-vec dwt/text-font-attrs
-                                     dwt/text-spacing-attrs
-                                     dwt/text-transform-attrs)))
-                  typography (if multiple?
-                               txt/default-typography
-                               (merge txt/default-typography set-values))
-                  typography (generate-typography-name typography)]
-              (st/emit! (dwl/add-typography typography)
-                (ptk/event ::ev/event {::ev/name "add-asset-to-library"
-                                       :asset-type "typography"})))))
+            (st/emit! (dwl/add-typography typography)
+              (ptk/event ::ev/event {::ev/name "add-asset-to-library"
+                                     :asset-type "typography"}))))
 
         handle-change
         (mf/use-fn
