@@ -1767,15 +1767,15 @@
 
         add-typography
         (mf/use-fn
-          (mf/deps file-id typography)
-          (fn [_]
-            (when (not multiple?)
-              (st/emit! (dwt/update-attrs (:id text-shape) {:typography-ref-id typography-id
-                                                            :typography-ref-file file-id})))
+         (mf/deps file-id typography)
+         (fn [_]
+           (when (not multiple?)
+             (st/emit! (dwt/update-attrs (:id text-shape) {:typography-ref-id typography-id
+                                                           :typography-ref-file file-id})))
 
-            (st/emit! (dwl/add-typography typography)
-              (ptk/event ::ev/event {::ev/name "add-asset-to-library"
-                                     :asset-type "typography"}))))
+           (st/emit! (dwl/add-typography typography)
+             (ptk/event ::ev/event {::ev/name "add-asset-to-library"
+                                    :asset-type "typography"}))))
         
         handle-change
         (mf/use-fn
