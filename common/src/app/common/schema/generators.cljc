@@ -16,17 +16,21 @@
 
 (defn sample
   ([g]
-   (tgen/sample g))
-  ([g n]
-   (tgen/sample g n)))
+   (mg/sample g {:registry sr/default-registry}))
+  ([g opts]
+   (mg/sample g (assoc opts :registry sr/default-registry))))
 
 (defn generate
-  [g]
-  (tgen/generate g))
+  ([g]
+   (mg/generate g {:registry sr/default-registry}))
+  ([g opts]
+   (mg/generate g (assoc opts :registry sr/default-registry))))
 
 (defn generator
-  [s]
-  (mg/generator s {:registry sr/default-registry}))
+  ([s]
+   (mg/generator s {:registry sr/default-registry}))
+  ([s opts]
+   (mg/generator s (assoc opts :registry sr/default-registry))))
 
 (defn small-double
   [& {:keys [min max] :or {min -100 max 100}}]

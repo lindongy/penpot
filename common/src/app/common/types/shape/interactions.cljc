@@ -268,7 +268,7 @@
      [:position-relative-to {:optional true} [:maybe ::sm/uuid]]]]
    [:close-overlay
     [:map
-     [:event-action [:= :toggle-overlay]]
+     [:event-action [:= :close-overlay]]
      [:event-type [::sm/one-of event-types]]
      [:destination {:optional true} [:maybe ::sm/uuid]]
      [:animation ::animation]

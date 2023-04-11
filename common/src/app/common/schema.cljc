@@ -53,6 +53,12 @@
   ([s o]
    (mg/generate (schema s) o)))
 
+(defn generate
+  ([s]
+   (mg/generate (schema s)))
+  ([s o]
+   (mg/generate (schema s) o)))
+
 (defn form
   [s]
   (m/form s))
